@@ -4,6 +4,7 @@ import {
 } from "react-router";
 import HomeComponent from "./component/BookList";
 import BookDetailComponent from "./component/BookCard";
+import SearchResults from "./component/SearchResults";
 
 const router = createBrowserRouter([
   {
@@ -11,8 +12,12 @@ const router = createBrowserRouter([
     Component: HomeComponent,
   },
   {
-    path: "/book/:id",
+    path: "/books/:id",
     Component: BookDetailComponent,
+  },
+  {
+    path: "/search",
+    Component: SearchResults,
   },
 ]);
 

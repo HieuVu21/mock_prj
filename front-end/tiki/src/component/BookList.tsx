@@ -14,7 +14,8 @@ const HomeComponent = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sortBy, setSortBy] = useState<'name' | 'rating' | 'sold' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
+  const [screenSize, setScreenSize] = useState(window.innerWidth);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +26,16 @@ const HomeComponent = () => {
         setBooks(data);
       })
       .catch(error => console.error('Failed to fetch books:', error))
-      .finally(() => setLoading(false)); // Set loading to false after fetch
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenSize(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Get unique categories
@@ -94,12 +104,64 @@ const HomeComponent = () => {
     return filtered;
   }, [books, searchTerm, selectedCategory, sortBy, sortOrder]);
 
+  // Determine grid columns based on screen size
+  const getProductColumns = () => {
+    if (screenSize >= 1400) return 5; // Very large screens
+    if (screenSize >= 1200) return 4; // Large screens
+    if (screenSize >= 900) return 3;  // Medium screens
+    if (screenSize >= 600) return 2;  // Small screens
+    return 1; // Mobile
+  };
+
+  // Layout styles
+  const mainContainerStyles: React.CSSProperties = {
+    minHeight: '100vh',
+    backgroundColor: '#f9fafb'
+  };
+
+  const contentStyles: React.CSSProperties = {
+    maxWidth: '1248px',
+    margin: '0 auto',
+    padding: screenSize >= 768 ? '0 1.5rem' : '0 1rem',
+    paddingTop: '1.5rem',
+    paddingBottom: '1.5rem'
+  };
+
+  const layoutStyles: React.CSSProperties = {
+    display: 'flex',
+    gap: '1.5rem',
+    flexDirection: screenSize >= 768 ? 'row' : 'column'
+  };
+
+  const sidebarStyles: React.CSSProperties = {
+    width: screenSize >= 768 ? '240px' : '100%',
+    flexShrink: 0
+  };
+
+  const productGridContainerStyles: React.CSSProperties = {
+    flex: 1,
+    minWidth: 0
+  };
+
+  const productGridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
+    gap: '1rem',
+    width: '100%'
+  };
+
+  const skeletonGridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
+    gap: '1rem'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={mainContainerStyles}>
       <Header />
       
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div style={contentStyles}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Sách</h1>
           <div className="flex items-center space-x-2">
@@ -130,10 +192,10 @@ const HomeComponent = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-12 gap-6">
+        <div style={layoutStyles}>
           {/* Sidebar */}
-          <div className="col-span-3">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+          <div style={sidebarStyles}>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden sticky top-0">
               <h3 className="font-semibold text-gray-900 text-xs px-4 py-3 bg-gray-50 border-b border-gray-100">
                 Danh mục sản phẩm
               </h3>
@@ -168,44 +230,43 @@ const HomeComponent = () => {
               </div>
             </div>
           </div>
-          {/* Product Grid */}
-          <div className="col-span-9">
-            {/* Product grid will be rendered here */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+          {/* Product Grid Container */}
+          <div style={productGridContainerStyles}>
             {loading ? (
-              <div className="grid grid-cols-4 gap-4">
+              <div style={skeletonGridStyles}>
                 {Array.from({ length: 8 }).map((_, index) => (
                   <SkeletonCard key={index} />
                 ))}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-4 gap-4">
+                <div style={productGridStyles}>
                   {filteredAndSortedBooks.map((book) => (
                     <div
                       key={book.id}
                       className="group bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 cursor-pointer flex flex-col h-full hover:shadow-2xl transition-shadow duration-300"
-                      onClick={() => navigate(`/book/${book.id}`)}
+                      onClick={() => navigate(`/books/${book.id}`)}
                       tabIndex={0}
                       role="button"
                       onKeyDown={e => { if (e.key === 'Enter') navigate(`/book/${book.id}`); }}
                     >
                       {/* Image Container */}
-                      <div className="relative pt-[100%] overflow-hidden bg-gray-50 rounded-t-lg">
+                      <div style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden', backgroundColor: '#f9fafb', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
                         <img
                           src={book.images[0].small_url}
                           alt={book.name}
-                          className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300"
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
                         />
 
                         {/* Badges under image */}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-                          <img src="https://salt.tikicdn.com/ts/upload/c2/bc/6d/ff18cc8968e2bbb43f7ac58efbfafdff.png" alt="Chính Hãng" className="h-70 w-60 absolute bottom-2 left-2" />
+                        <div style={{ position: 'absolute', bottom: '0.5rem', left: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                          <img src="https://salt.tikicdn.com/ts/upload/c2/bc/6d/ff18cc8968e2bbb43f7ac58efbfafdff.png" alt="Chính Hãng" style={{ height: '70px', width: '60px' }} />
                         </div>
                       </div>
 
                       {/* Content */}
-                      <div className="p-2 flex-grow flex flex-col">
+                      <div style={{ padding: '0.5rem', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                         {/* Title */}
                         <h3 className="text-sm text-gray-800 mb-1.5 line-clamp-2 leading-snug transition-colors flex-grow">
                           {book.name}
@@ -214,7 +275,7 @@ const HomeComponent = () => {
                         {/* Rating and Sold count */}
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1.5">
                           <StarRating rating={book.rating_average || 0} />
-                          <div className="w-px h-3 bg-gray-200"></div>
+                          <div style={{ width: '1px', height: '0.75rem', backgroundColor: '#e5e7eb' }}></div>
                           <span>Đã bán {book.quantity_sold?.value || 0}</span>
                         </div>
 
@@ -232,7 +293,7 @@ const HomeComponent = () => {
 
                         {/* Shipping */}
                         <div className="text-xs text-gray-700 flex items-center gap-1">
-                          <img src="/iconnow.png" alt="Now Ship" className="h-4"/>
+                          <img src="/iconnow.png" alt="Now Ship" style={{ height: '1rem' }} />
                           <span>Giao siêu tốc 2h</span>
                         </div>
                       </div>
@@ -242,7 +303,7 @@ const HomeComponent = () => {
 
                 {/* No Results */}
                 {!loading && filteredAndSortedBooks.length === 0 && (
-                  <div className="text-center py-16 col-span-full">
+                  <div className="text-center py-16">
                     <div className="text-gray-300 text-8xl mb-6">📚</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
                     <p className="text-gray-500 max-w-md mx-auto">
@@ -270,7 +331,6 @@ const HomeComponent = () => {
         </div>
       </div>
       <Footer />
-    </div>
     </div>
   );
 };
