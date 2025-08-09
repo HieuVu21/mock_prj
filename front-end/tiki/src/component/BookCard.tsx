@@ -5,6 +5,7 @@ import DescriptionComponent from "./DescriptionComponent";
 import StarRating from "./StarRating";
 import Header from './Header';
 import Footer from './Footer';
+import Breadcrumb from './Breadcrumb';
 
 const BookDetailComponent = () => {
   const { id } = useParams();
@@ -79,12 +80,6 @@ const BookDetailComponent = () => {
     return new Intl.NumberFormat('vi-VN').format(price) + '₫';
   };
 
-  // Calculate total price based on quantity
-  const calculateTotalPrice = () => {
-    if (!book?.list_price) return '0₫';
-    return formatPrice(book.list_price * quantity);
-  };
-
   // CSS styles for the 3-column layout
   const containerStyles: React.CSSProperties = {
     display: 'grid',
@@ -122,9 +117,28 @@ const BookDetailComponent = () => {
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
   };
 
+  // Get category name from book data
+  const getCategoryName = () => {
+    if (book?.categories?.name) {
+      return book.categories.name;
+    }
+    return 'Danh mục';
+  };
+
   return (
     <>
       <Header />
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb 
+            items={[
+              { name: 'Trang chủ', path: '/' },
+              { name: getCategoryName(), path: `/?category=${book.categories.id || ''}` },
+              { name: book?.name || 'Sản phẩm' }
+            ]} 
+          />
+        </div>
+      </div>
       <div className="p-6 bg-gray-100" style={{ minHeight: '100vh' }}>
         <div style={{ maxWidth: '80rem', margin: '0 auto', width: '100%' }}>
           <div style={containerStyles}>
@@ -212,8 +226,8 @@ const BookDetailComponent = () => {
                 {/* Book Title Card */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                 <div className="flex">
-                      <span className="w-32 text-gray-500">Tác giả:</span>
-                      <span className="text-gray-700 font-medium">
+                      <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
+                      <span className="text-blue-600 font-medium text-sm">
                         {getAuthorName()}
                       </span>
                     </div>
@@ -361,39 +375,40 @@ const BookDetailComponent = () => {
                         {relatedBooks
                           .slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
                           .map((relatedBook) => (
-                            <div key={relatedBook.id} className="flex flex-col">
-                              <Link to={`/books/${relatedBook.id}`} className="block">
-                                <div className="bg-white rounded overflow-hidden hover:shadow-sm transition-shadow h-full flex flex-col">
-                                  <div className="relative pt-[140%]">
-                                    <img 
-                                      src={relatedBook.images?.[0]?.base_url || 'https://via.placeholder.com/100x140'} 
-                                      alt={relatedBook.name}
-                                      className="absolute top-0 left-0 w-full h-full object-cover p-1"
-                                    />
+                            <Link 
+                              key={relatedBook.id} 
+                              to={`/books/${relatedBook.id}`} 
+                              className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white"
+                            >
+                              <div className="relative pt-[140%]">
+                                <img 
+                                  src={relatedBook.images?.[0]?.base_url || 'https://via.placeholder.com/100x140'} 
+                                  alt={relatedBook.name}
+                                  className="absolute top-0 left-0 w-full h-full object-cover p-1"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <div className="p-1.5 flex-1 flex flex-col">
+                                <h3 className="text-xs font-medium text-gray-900 line-clamp-2 mb-1 leading-tight">
+                                  {relatedBook.name}
+                                </h3>
+                                <div className="mt-auto">
+                                  <div className="flex flex-col">
+                                    <span className="text-red-600 font-semibold text-xs">
+                                      {relatedBook.list_price ? formatPrice(relatedBook.list_price) : 'NaN'}
+                                    </span>
+                                    {relatedBook.original_price && relatedBook.original_price > relatedBook.list_price && (
+                                      <span className="text-[10px] text-gray-500 line-through">
+                                        {formatPrice(relatedBook.original_price)}
+                                      </span>
+                                    )}
                                   </div>
-                                  <div className="p-1.5 flex-1 flex flex-col">
-                                    <h3 className="text-xs font-medium text-gray-900 line-clamp-2 mb-1 leading-tight">
-                                      {relatedBook.name}
-                                    </h3>
-                                    <div className="mt-auto">
-                                      <div className="flex flex-col">
-                                        <span className="text-red-600 font-semibold text-xs">
-                                          {relatedBook.list_price ? formatPrice(relatedBook.list_price) : 'Liên hệ'}
-                                        </span>
-                                        {relatedBook.original_price && relatedBook.original_price > relatedBook.list_price && (
-                                          <span className="text-[10px] text-gray-500 line-through">
-                                            {formatPrice(relatedBook.original_price)}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center mt-1">
-                                        <StarRating rating={relatedBook.rating_average || 0} />
-                                      </div>
-                                    </div>
+                                  <div className="flex items-center mt-1">
+                                    <StarRating rating={relatedBook.rating_average || 0} />
                                   </div>
                                 </div>
-                              </Link>
-                            </div>
+                              </div>
+                            </Link>
                           ))}
                       </div>
                     </div>

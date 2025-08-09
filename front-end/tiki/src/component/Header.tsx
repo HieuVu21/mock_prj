@@ -1,9 +1,63 @@
-import { FiHome, FiShoppingCart } from 'react-icons/fi';
+import { FiHome, FiShoppingCart, FiX } from 'react-icons/fi';
 import { BsSearch } from 'react-icons/bs';
 import { FaRegFaceGrinWink } from "react-icons/fa6";
-
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { Books } from '../interface/book.interface';
 
 const Header = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<Books[]>([]);
+  const [loading, setLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch search suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!searchQuery.trim()) {
+        setSuggestions([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `http://localhost:3000/books?q=${encodeURIComponent(searchQuery)}&_limit=5`
+        );
+        const data = await response.json();
+        setSuggestions(data);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSuggestions(false);
+    }
+  };
   return (
     <header className="bg-white text-[#808089] py-2 font-sans border-b border-[#f0f0f0]">
       <div className="max-w-[1240px] mx-auto px-5">
@@ -12,16 +66,85 @@ const Header = () => {
               <img src="/tiki-logo.png" alt="Tiki Logo" className="h-8" />
             <span className="block text-xs font-bold">Tốt & Nhanh</span>
           </div>
-          <div className="flex-grow flex flex-col">
+          <div className="flex-grow flex flex-col" ref={searchRef}>
             <div className="flex items-center gap-4">
-              <div className="flex-grow flex items-center border border-gray-200 rounded-md h-9">
-                <BsSearch className="text-gray-400 mx-2.5" />
-                <input type="text" placeholder="Giao ST25 25k/kg bao thật" className="flex-grow h-full bg-transparent outline-none px-2 text-xs" />
-                <div className="border-l border-gray-200 h-5"></div>
-                <button className="text-[#0A68FF] font-semibold px-3 whitespace-nowrap cursor-pointer hover:bg-[#f0f8ff] transition-colors rounded-r-md h-full text-sm">Tìm kiếm</button>
-              </div>
+              <form onSubmit={handleSearch} className="flex-grow relative">
+                <div className="flex items-center border border-gray-200 rounded-md h-9 bg-white">
+                  <BsSearch className="text-gray-400 mx-2.5" />
+                  <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    placeholder="Giao ST25 25k/kg bao thật" 
+                    className="flex-grow h-full bg-transparent outline-none px-2 text-sm text-gray-800" 
+                  />
+                  {searchQuery && (
+                    <button 
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-gray-400 hover:text-gray-600 p-1 mr-2"
+                    >
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  )}
+                  <div className="border-l border-gray-200 h-5"></div>
+                  <button 
+                    type="submit"
+                    className="text-[#0A68FF] font-semibold px-3 whitespace-nowrap cursor-pointer hover:bg-[#f0f8ff] transition-colors rounded-r-md h-full text-sm"
+                  >
+                    Tìm kiếm
+                  </button>
+                </div>
+
+                {/* Search Suggestions */}
+                {showSuggestions && searchQuery.trim() && (
+                  <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-96 overflow-y-auto">
+                    {loading ? (
+                      <div className="p-3 text-sm text-gray-500">Đang tìm kiếm...</div>
+                    ) : suggestions.length > 0 ? (
+                      <ul className="py-1">
+                        {suggestions.map((book) => (
+                          <li 
+                            key={book.id}
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                            onClick={() => {
+                              navigate(`/books/${book.id}`);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            <img 
+                              src={book.images?.[0]?.thumbnail_url || 'https://via.placeholder.com/40x50'} 
+                              alt={book.name}
+                              className="w-8 h-10 object-cover mr-3"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">{book.name}</div>
+                              <div className="text-sm text-red-600 font-medium">
+                                {book.list_price ? new Intl.NumberFormat('vi-VN').format(book.list_price) + '₫' : 'Liên hệ'}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                        <li 
+                          className="px-4 py-2 bg-gray-50 text-blue-600 hover:bg-gray-100 cursor-pointer text-sm font-medium"
+                          onClick={() => {
+                            navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          Xem tất cả kết quả cho "{searchQuery}"
+                        </li>
+                      </ul>
+                    ) : searchQuery.trim() ? (
+                      <div className="p-3 text-sm text-gray-500">Không tìm thấy kết quả</div>
+                    ) : null}
+                  </div>
+                )}
+              </form>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                onClick={() => navigate('/')}>
                   <FiHome className="text-lg" />
                   <span>Trang chủ</span>
                 </div>

@@ -185,7 +185,7 @@ const HomeComponent = () => {
                     <div
                       key={book.id}
                       className="group bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 cursor-pointer flex flex-col h-full hover:shadow-2xl transition-shadow duration-300"
-                      onClick={() => navigate(`/book/${book.id}`)}
+                      onClick={() => navigate(`/books/${book.id}`)}
                       tabIndex={0}
                       role="button"
                       onKeyDown={e => { if (e.key === 'Enter') navigate(`/book/${book.id}`); }}
