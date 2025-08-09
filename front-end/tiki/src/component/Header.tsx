@@ -60,8 +60,8 @@ const Header = () => {
   };
   return (
     <header className="bg-white text-[#808089] py-2 font-sans border-b border-[#f0f0f0]">
-      <div className="max-w-[1240px] mx-auto px-5">
-        <div className="flex items-center justify-between gap-[20px]">
+      <div className="mx-auto px-5">
+        <div className="flex items-center justify-between gap-[20px] ">
           <div className="text-center">
               <img src="/tiki-logo.png" alt="Tiki Logo" className="h-8" />
             <span className="block text-xs font-bold">Tốt & Nhanh</span>

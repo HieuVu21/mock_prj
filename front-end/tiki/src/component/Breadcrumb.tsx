@@ -20,12 +20,12 @@ const Breadcrumb = ({ items, className = '' }: BreadcrumbProps) => {
           {item.path ? (
             <Link 
               to={item.path} 
-              className="text-blue-600 hover:text-blue-800 hover:underline"
+              className="text-gray-500 hover:text-gray-800 hover:underline"
             >
               {item.name}
             </Link>
           ) : (
-            <span className="text-gray-600">{item.name}</span>
+            <span className="text-gray-500">{item.name}</span>
           )}
         </div>
       ))}

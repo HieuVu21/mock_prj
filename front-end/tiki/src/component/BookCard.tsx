@@ -42,7 +42,7 @@ const BookDetailComponent = () => {
               b.id !== id && 
               b.categories && 
               b.categories.id === categoryId
-            ).slice(0, 4); // Limit to 4 related books
+            ); 
             
             setRelatedBooks(related);
           }
@@ -128,8 +128,8 @@ const BookDetailComponent = () => {
   return (
     <>
       <Header />
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className=" border-b border-gray-200">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <Breadcrumb 
             items={[
               { name: 'Trang chủ', path: '/' },
@@ -180,9 +180,9 @@ const BookDetailComponent = () => {
                       );
                     })}
                   </div>
-                  {thumbnailStartIndex > 0 && (
+                  {thumbnailStartIndex > 5 && (
                     <button
-                      onClick={() => setThumbnailStartIndex(prev => Math.max(0, prev - 1))}
+                      onClick={() => setThumbnailStartIndex(prev => Math.max(0, prev - 5))}
                       className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
                       style={{
                         transform: 'translate(-50%, -50%)',
@@ -200,7 +200,7 @@ const BookDetailComponent = () => {
                   )}
                   {thumbnailStartIndex < book.images.length - 5 && (
                     <button
-                      onClick={() => setThumbnailStartIndex(prev => Math.min(book.images.length - 5, prev + 1))}
+                      onClick={() => setThumbnailStartIndex(prev => Math.min(book.images.length - 5, prev + 5))}
                       className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
                       style={{
                         transform: 'translate(50%, -50%)',
@@ -337,48 +337,20 @@ const BookDetailComponent = () => {
                   </div>
                 </div>
                 <div>
-                {/* Related Books Section - Compact 4 Column Grid */}
+                {/* Related Books Section */}
                 {relatedBooks.length > 0 && (
                   <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
-                    <div className="flex justify-between items-center mb-3">
-                      <h2 className="text-lg font-semibold text-gray-800">Sản phẩm tương tự</h2>
-                      {relatedBooks.length > itemsPerPage && (
-                        <div className="flex space-x-1">
-                          <button 
-                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                            disabled={currentPage === 0}
-                            className="p-1.5 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="Trang trước"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <button 
-                            onClick={() => setCurrentPage(prev => 
-                              Math.min(prev + 1, Math.ceil(relatedBooks.length / itemsPerPage) - 1)
-                            )}
-                            disabled={currentPage >= Math.ceil(relatedBooks.length / itemsPerPage) - 1}
-                            className="p-1.5 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="Trang sau"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    
                     
                     <div className="relative">
-                      <div className="grid grid-cols-4 gap-2">
-                        {relatedBooks
-                          .slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
-                          .map((relatedBook) => (
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Sản phẩm tương tự</h3>
+                      <div className="relative">
+                        <div className="grid grid-cols-4 gap-2">
+                          {relatedBooks.slice(currentPage * 4, (currentPage * 4) + 4).map((relatedBook) => (
                             <Link 
                               key={relatedBook.id} 
-                              to={`/books/${relatedBook.id}`} 
-                              className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white"
+                              to={`/books/${relatedBook.id}`}
+                              className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white border border-gray-100"
                             >
                               <div className="relative pt-[140%]">
                                 <img 
@@ -388,8 +360,8 @@ const BookDetailComponent = () => {
                                   loading="lazy"
                                 />
                               </div>
-                              <div className="p-1.5 flex-1 flex flex-col">
-                                <h3 className="text-xs font-medium text-gray-900 line-clamp-2 mb-1 leading-tight">
+                              <div className="p-2 flex-1 flex flex-col">
+                                <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
                                   {relatedBook.name}
                                 </h3>
                                 <div className="mt-auto">
@@ -410,6 +382,47 @@ const BookDetailComponent = () => {
                               </div>
                             </Link>
                           ))}
+                        </div>
+                        
+                        {/* Next button overlay */}
+                        {relatedBooks.length > 4 && (currentPage + 1) * 4 < relatedBooks.length && (
+                          <button
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="absolute right-6 top-1/2 -translate-y-1/2 translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              zIndex: 10
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
+                        
+                        {/* Previous button */}
+                        {currentPage > 0 && (
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              zIndex: 10
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
