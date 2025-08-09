@@ -180,17 +180,18 @@ const BookDetailComponent = () => {
                       );
                     })}
                   </div>
-                  {thumbnailStartIndex > 5 && (
+                  {thumbnailStartIndex > 0 && (
                     <button
                       onClick={() => setThumbnailStartIndex(prev => Math.max(0, prev - 5))}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100 transition-colors"
                       style={{
                         transform: 'translate(-50%, -50%)',
                         width: '24px',
                         height: '24px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        zIndex: 10
                       }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,14 +202,15 @@ const BookDetailComponent = () => {
                   {thumbnailStartIndex < book.images.length - 5 && (
                     <button
                       onClick={() => setThumbnailStartIndex(prev => Math.min(book.images.length - 5, prev + 5))}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100 transition-colors"
                       style={{
                         transform: 'translate(50%, -50%)',
                         width: '24px',
                         height: '24px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        zIndex: 10
                       }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
