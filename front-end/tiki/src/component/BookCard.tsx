@@ -479,28 +479,10 @@ const BookDetailComponent = () => {
                   </div>
                 </div>
 
-                {/* Price Section */}
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-red-600 mb-1">
-                    {book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'}
-                  </div>
-                  
-                  {book.original_price && book.original_price > book.list_price && (
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-500 line-through mr-2">
-                        {formatPrice(book.original_price)}
-                      </span>
-                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
-                        -{Math.round((1 - book.list_price / book.original_price) * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-
                 {/* Quantity Selector */}
                 <div className="mb-4">
+                  <div className="text-xl text-gray-700 mb-2">Số lượng</div>
                   <div className="flex items-center mb-2">
-                    <span className="text-sm text-gray-700 mr-4">Số lượng</span>
                     <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
                       <button 
                         className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
@@ -521,6 +503,18 @@ const BookDetailComponent = () => {
                     </div>
                   </div>
                   </div>
+
+                {/* Price Section */}
+                <div className="mb-4">
+                  <div className="text-xl font-bold text-gray-700">
+                      Tạm tính
+                  </div>
+                  <div className="text-2xl font-bold text-red-600 mb-1">
+                    {(book.current_seller?.price ? formatPrice(book.current_seller.price * quantity) : (book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'))}
+                  </div>
+                </div>
+
+                
 
                 {/* Action Buttons */}
                 <div className="mb-4">
