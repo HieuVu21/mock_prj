@@ -263,19 +263,27 @@ const BookDetailComponent = () => {
                     )}
                   </div>
                   <div className="flex items-end">
-                    <span className="text-3xl font-bold text-red-600 mr-3">
-                      {formatPrice(book.list_price || 0)}
-                    </span>
-                    {book.original_price && book.original_price > book.list_price && (
-                      <div className="flex items-center">
-                        <span className="text-base text-gray-500 line-through mr-2">
-                          {formatPrice(book.original_price)}
-                        </span>
-                        <span className="bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded">
-                          -{Math.round((1 - (book.list_price / book.original_price)) * 100)}%
-                        </span>
-                      </div>
-                    )}
+                    {(() => {
+                      const salePrice = book.current_seller?.price ?? book.list_price;
+                      const hasDiscount = book.original_price && book.original_price > salePrice;
+                      return (
+                        <>
+                          <span className="text-3xl font-bold text-red-600 mr-3">
+                            {formatPrice(salePrice || 0)}
+                          </span>
+                          {hasDiscount && (
+                            <div className="flex items-center">
+                              <span className="bg-gray-200 text-black text-xs font-medium px-2 py-0.5 rounded">
+                                -{Math.round(((book.original_price - salePrice) / book.original_price) * 100)}%
+                              </span>
+                              <span className="text-base text-gray-500 line-through ml-2">
+                                {formatPrice(book.original_price)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
