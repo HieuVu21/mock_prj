@@ -263,19 +263,27 @@ const BookDetailComponent = () => {
                     )}
                   </div>
                   <div className="flex items-end">
-                    <span className="text-3xl font-bold text-red-600 mr-3">
-                      {formatPrice(book.list_price || 0)}
-                    </span>
-                    {book.original_price && book.original_price > book.list_price && (
-                      <div className="flex items-center">
-                        <span className="text-base text-gray-500 line-through mr-2">
-                          {formatPrice(book.original_price)}
-                        </span>
-                        <span className="bg-red-600 text-white text-xs font-medium px-2 py-0.5 rounded">
-                          -{Math.round((1 - (book.list_price / book.original_price)) * 100)}%
-                        </span>
-                      </div>
-                    )}
+                    {(() => {
+                      const salePrice = book.current_seller?.price ?? book.list_price;
+                      const hasDiscount = book.original_price && book.original_price > salePrice;
+                      return (
+                        <>
+                          <span className="text-3xl font-bold text-red-600 mr-3">
+                            {formatPrice(salePrice || 0)}
+                          </span>
+                          {hasDiscount && (
+                            <div className="flex items-center">
+                              <span className="bg-gray-200 text-black text-xs font-medium px-2 py-0.5 rounded">
+                                -{Math.round(((book.original_price - salePrice) / book.original_price) * 100)}%
+                              </span>
+                              <span className="text-base text-gray-500 line-through ml-2">
+                                {formatPrice(book.original_price)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -471,28 +479,10 @@ const BookDetailComponent = () => {
                   </div>
                 </div>
 
-                {/* Price Section */}
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-red-600 mb-1">
-                    {book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'}
-                  </div>
-                  
-                  {book.original_price && book.original_price > book.list_price && (
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-500 line-through mr-2">
-                        {formatPrice(book.original_price)}
-                      </span>
-                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
-                        -{Math.round((1 - book.list_price / book.original_price) * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-
                 {/* Quantity Selector */}
                 <div className="mb-4">
+                  <div className="text-xl text-gray-700 mb-2">Số lượng</div>
                   <div className="flex items-center mb-2">
-                    <span className="text-sm text-gray-700 mr-4">Số lượng</span>
                     <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
                       <button 
                         className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
@@ -513,6 +503,18 @@ const BookDetailComponent = () => {
                     </div>
                   </div>
                   </div>
+
+                {/* Price Section */}
+                <div className="mb-4">
+                  <div className="text-xl font-bold text-gray-700">
+                      Tạm tính
+                  </div>
+                  <div className="text-2xl font-bold text-red-600 mb-1">
+                    {(book.current_seller?.price ? formatPrice(book.current_seller.price * quantity) : (book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'))}
+                  </div>
+                </div>
+
+                
 
                 {/* Action Buttons */}
                 <div className="mb-4">

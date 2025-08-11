@@ -105,13 +105,7 @@ const HomeComponent = () => {
   }, [books, searchTerm, selectedCategory, sortBy, sortOrder]);
 
   // Determine grid columns based on screen size
-  const getProductColumns = () => {
-    if (screenSize >= 1400) return 5; // Very large screens
-    if (screenSize >= 1200) return 4; // Large screens
-    if (screenSize >= 900) return 3;  // Medium screens
-    if (screenSize >= 600) return 2;  // Small screens
-    return 1; // Mobile
-  };
+  const getProductColumns = () => 4;
 
   // Layout styles
   const mainContainerStyles: React.CSSProperties = {
@@ -120,9 +114,9 @@ const HomeComponent = () => {
   };
 
   const contentStyles: React.CSSProperties = {
-    maxWidth: '1248px',
+    maxWidth: '1440px',
     margin: '0 auto',
-    padding: screenSize >= 768 ? '0 1.5rem' : '0 1rem',
+    padding: screenSize >= 768 ? '0 2.5rem' : '0 1rem',
     paddingTop: '1.5rem',
     paddingBottom: '1.5rem'
   };
@@ -258,11 +252,6 @@ const HomeComponent = () => {
                           alt={book.name}
                           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
                         />
-
-                        {/* Badges under image */}
-                        <div style={{ position: 'absolute', bottom: '0.5rem', left: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                          <img src="https://salt.tikicdn.com/ts/upload/c2/bc/6d/ff18cc8968e2bbb43f7ac58efbfafdff.png" alt="Chính Hãng" style={{ height: '70px', width: '60px' }} />
-                        </div>
                       </div>
 
                       {/* Content */}
@@ -280,13 +269,30 @@ const HomeComponent = () => {
                         </div>
 
                         {/* Price */}
+                        {(() => {
+                          const salePrice = book.current_seller?.price ?? book.list_price;
+                          console.log('Book price info:', {
+                            name: book.name,
+                            original_price: book.original_price,
+                            sale_price: salePrice,
+                            percent_discount: book.original_price > salePrice ? Math.round(((book.original_price - salePrice) / book.original_price) * 100) : 0
+                          });
+                          return null;
+                        })()}
                         <div className="flex items-baseline gap-2 mb-2">
-                          <span className="text-base font-bold text-red-500">
-                            {book.list_price.toLocaleString()}₫
-                          </span>
-                          {book.original_price > book.list_price && (
-                            <span className="text-xs bg-gray-100 text-gray-500 font-semibold px-1 py-0.5 rounded">
-                              -{Math.round(((book.original_price - book.list_price) / book.original_price) * 100)}%
+                          {book.original_price > (book.current_seller?.price ?? book.list_price) ? (
+                            <>
+                              <span className="text-base font-bold text-red-500">
+                                {(book.current_seller?.price ?? book.list_price).toLocaleString()}₫
+                              </span>
+                              <span className="text-xs text-black bg-gray-200 font-semibold px-1.5 py-0.5 rounded ml-1 align-middle">
+                                -{Math.round(((book.original_price - (book.current_seller?.price ?? book.list_price)) / book.original_price) * 100)}%
+                              </span>
+                              
+                            </>
+                          ) : (
+                            <span className="text-base font-bold text-red-500">
+                              {(book.current_seller?.price ?? book.list_price).toLocaleString()}₫
                             </span>
                           )}
                         </div>
