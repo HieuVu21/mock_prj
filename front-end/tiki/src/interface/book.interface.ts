@@ -17,7 +17,8 @@ export interface Books {
   description: string;
   short_description: string | null;
   rating_average: number;
-  quantity_sold: {
+  stock_quantity?: number;
+  quantity_sold?: {
     text: string;
     value: number;
   };
@@ -26,11 +27,7 @@ export interface Books {
     name: string;
     slug: string;
   }>;
-  categories: {
-    id: number;
-    name: string;
-    is_leaf: boolean;
-  };
+  categories: Category,
   current_seller: {
     id: number;
     sku: string;
@@ -51,6 +48,7 @@ export interface Books {
       value: string;
     }>;
   }>;
+<<<<<<< HEAD
   
   // Additional fields from sample data
   publisher?: {
@@ -65,4 +63,23 @@ export interface Books {
   // Nested publisher information might be in specifications
   publisher_vn?: string;
   manufacturer?: string;
+=======
+}
+export interface ProductApiResponse {
+  docs: Books[];
+  totalDocs: number;
+  limit: number;
+  totalPages: number;
+  page: number;
+  pagingCounter: number;
+  hasPrevPage: boolean;
+  hasNextPage: boolean;
+  prevPage: number | null;
+  nextPage: number | null;
+}
+export interface Category {
+  id: number;
+  name: string;
+  is_leaf?: boolean; // Thêm dấu ? để cho biết nó có thể không có
+>>>>>>> origin/quang
 }
