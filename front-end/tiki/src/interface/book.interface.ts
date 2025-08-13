@@ -14,14 +14,14 @@ export interface Books {
   }>;
   list_price: number;
   original_price: number;
-  description: string ;
+  description: string;
   short_description: string | null;
   rating_average: number;
   quantity_sold: {
     text: string;
     value: number;
   };
-  authors: Array<{
+  authors?: Array<{
     id: number;
     name: string;
     slug: string;
@@ -51,4 +51,18 @@ export interface Books {
       value: string;
     }>;
   }>;
+  
+  // Additional fields from sample data
+  publisher?: {
+    id: number;
+    name: string;
+  };
+  page_count?: number;
+  release_date?: string;
+  format?: string;
+  review_count?: number;
+  
+  // Nested publisher information might be in specifications
+  publisher_vn?: string;
+  manufacturer?: string;
 }

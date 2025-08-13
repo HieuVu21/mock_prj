@@ -1,6 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import type { Books } from '../interface/book.interface';
+import Header from './Header';
+import Footer from './Footer';
+import SkeletonCard from './SkeletonCard'; // Import SkeletonCard
+import StarRating from './StarRating'; // Import StarRating
 
 const API_URL = 'http://localhost:3000/books'; 
 
@@ -10,14 +14,28 @@ const HomeComponent = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sortBy, setSortBy] = useState<'name' | 'rating' | 'sold' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [loading, setLoading] = useState(true);
+  const [screenSize, setScreenSize] = useState(window.innerWidth);
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     fetch(API_URL)
       .then((res) => res.json())
       .then((data) => {
         setBooks(data);
-      });
+      })
+      .catch(error => console.error('Failed to fetch books:', error))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenSize(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Get unique categories
@@ -86,285 +104,239 @@ const HomeComponent = () => {
     return filtered;
   }, [books, searchTerm, selectedCategory, sortBy, sortOrder]);
 
+  // Determine grid columns based on screen size
+  const getProductColumns = () => 4;
+
+  // Layout styles
+  const mainContainerStyles: React.CSSProperties = {
+    minHeight: '100vh',
+    backgroundColor: '#f9fafb'
+  };
+
+  const contentStyles: React.CSSProperties = {
+    maxWidth: '1440px',
+    margin: '0 auto',
+    padding: screenSize >= 768 ? '0 2.5rem' : '0 1rem',
+    paddingTop: '1.5rem',
+    paddingBottom: '1.5rem'
+  };
+
+  const layoutStyles: React.CSSProperties = {
+    display: 'flex',
+    gap: '1.5rem',
+    flexDirection: screenSize >= 768 ? 'row' : 'column'
+  };
+
+  const sidebarStyles: React.CSSProperties = {
+    width: screenSize >= 768 ? '240px' : '100%',
+    flexShrink: 0
+  };
+
+  const productGridContainerStyles: React.CSSProperties = {
+    flex: 1,
+    minWidth: 0
+  };
+
+  const productGridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
+    gap: '1rem',
+    width: '100%'
+  };
+
+  const skeletonGridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
+    gap: '1rem'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-     
-
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sách, tác giả, mô tả..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
-                />
-              </div>
-            </div>
-
-            <div>
+    <div style={mainContainerStyles}>
+      <Header />
+      
+      {/* Main Content */}
+      <div style={contentStyles}>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Sách</h1>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-gray-500">Sắp xếp:</span>
+            <div className="relative">
               <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [selectedSortBy, selectedSortOrder] = e.target.value.split('-') as ['name' | 'rating' | 'sold' | 'price', 'asc' | 'desc'];
+                  setSortBy(selectedSortBy);
+                  setSortOrder(selectedSortOrder);
+                }}
+                className="appearance-none bg-white border border-gray-300 rounded-full pl-2 pr-2 py-2 text-xs font-medium text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors duration-200"
               >
-                <option value="">Tất cả danh mục</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+                <option value="sold-desc">Bán chạy nhất</option>
+                <option value="rating-desc">Đánh giá cao nhất</option>
+                <option value="price-asc">Giá: Thấp đến cao</option>
+                <option value="price-desc">Giá: Cao đến thấp</option>
+                <option value="name-asc">Tên: A đến Z</option>
+                <option value="name-desc">Tên: Z đến A</option>
               </select>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">{filteredAndSortedBooks.length}</span> sản phẩm
-              {searchTerm && (
-                <span className="ml-1">
-                  cho "<span className="font-medium text-blue-600">{searchTerm}</span>"
-                </span>
-              )}
-              {selectedCategory && (
-                <span className="ml-1">
-                  trong "<span className="font-medium text-blue-600">{categories.find(c => c.id.toString() === selectedCategory)?.name}</span>"
-                </span>
-              )}
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Sidebar - Sort Options */}
-          <div className="col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Sắp xếp</h3>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theo tên</label>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => { setSortBy('name'); setSortOrder('asc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'name' && sortOrder === 'asc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Tên A-Z
-                    </button>
-                    <button
-                      onClick={() => { setSortBy('name'); setSortOrder('desc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'name' && sortOrder === 'desc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Tên Z-A
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theo đánh giá</label>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => { setSortBy('rating'); setSortOrder('desc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'rating' && sortOrder === 'desc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Đánh giá cao nhất
-                    </button>
-                    <button
-                      onClick={() => { setSortBy('rating'); setSortOrder('asc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'rating' && sortOrder === 'asc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Đánh giá thấp nhất
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theo bán chạy</label>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => { setSortBy('sold'); setSortOrder('desc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'sold' && sortOrder === 'desc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Bán chạy nhất
-                    </button>
-                    <button
-                      onClick={() => { setSortBy('sold'); setSortOrder('asc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'sold' && sortOrder === 'asc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Bán ít nhất
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theo giá</label>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => { setSortBy('price'); setSortOrder('asc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'price' && sortOrder === 'asc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Giá thấp nhất
-                    </button>
-                    <button
-                      onClick={() => { setSortBy('price'); setSortOrder('desc'); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        sortBy === 'price' && sortOrder === 'desc'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Giá cao nhất
-                    </button>
-                  </div>
-                </div>
+        
+        <div style={layoutStyles}>
+          {/* Sidebar */}
+          <div style={sidebarStyles}>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden sticky top-0">
+              <h3 className="font-semibold text-gray-900 text-xs px-4 py-3 bg-gray-50 border-b border-gray-100">
+                Danh mục sản phẩm
+              </h3>
+              <div className="divide-y divide-gray-100">
+                <button
+                  onClick={() => setSelectedCategory('')}
+                  className={`w-full text-left px-4 py-3 text-xs transition-colors duration-150 ${
+                    selectedCategory === ''
+                      ? 'bg-blue-50 text-blue-600 font-medium border-l-4 border-blue-500'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 hover:font-medium'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    Tất cả sản phẩm
+                  </span>
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id.toString())}
+                    className={`w-full text-left px-4 py-3 text-xs transition-colors duration-150 ${
+                      selectedCategory === category.id.toString()
+                        ? 'bg-blue-50 text-blue-600 font-medium border-l-4 border-blue-500'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 hover:font-medium'
+                    }`}
+                  >
+                    <span className="flex items-center">
+                      {category.name}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Right Side - Books Grid */}
-          <div className="col-span-10">
-          <div className="grid grid-cols-4 gap-4">
-              {filteredAndSortedBooks.map((book) => (
-                <div
-                  key={book.id}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group border border-gray-100 overflow-hidden"
-                  onClick={() => navigate(`/book/${book.id}`)}
-                  tabIndex={0}
-                  role="button"
-                  onKeyDown={e => { if (e.key === 'Enter') navigate(`/book/${book.id}`); }}
-                >
-                  {/* Image Container */}
-                  <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
-                    <img
-                      src={book.images[0].small_url}
-                      alt={book.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
-                    
-                    {/* Rating Badge */}
-                    {book.rating_average > 0 && (
-                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm">
-                        <span className="text-yellow-600">★</span>
-                        <span>{book.rating_average.toFixed(1)}</span>
-                      </div>
-                    )}
-
-                    {/* Discount Badge */}
-                    {book.original_price > book.list_price && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                        -{Math.round(((book.original_price - book.list_price) / book.original_price) * 100)}%
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-3">
-                    {/* Price */}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg font-bold text-red-600">
-                        {book.list_price.toLocaleString()}₫
-                      </span>
-                      {book.original_price > book.list_price && (
-                        <span className="text-sm text-gray-400 line-through">
-                          {book.original_price.toLocaleString()}₫
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Author */}
-                    {book.authors?.[0]?.name && (
-                      <p className="text-xs text-gray-500 mb-1 truncate">
-                        {book.authors[0].name}
-                      </p>
-                    )}
-
-                    {/* Title */}
-                    <h3 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                      {book.name}
-                    </h3>
-
-                    {/* Bottom Info */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">
-                        Đã bán {book.quantity_sold?.value || 0}
-                      </span>
-                      {book.categories && (
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
-                          {book.categories.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* No Results */}
-            {filteredAndSortedBooks.length === 0 && (
-              <div className="text-center py-16">
-                <div className="text-gray-300 text-8xl mb-6">📚</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  {searchTerm 
-                    ? `Không có sản phẩm nào phù hợp với "${searchTerm}". Hãy thử từ khóa khác hoặc xóa bộ lọc.`
-                    : 'Không có sản phẩm nào trong danh mục này. Hãy thử danh mục khác.'
-                  }
-                </p>
-                {(searchTerm || selectedCategory) && (
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setSelectedCategory('');
-                    }}
-                    className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Xóa bộ lọc
-                  </button>
-                )}
+          {/* Product Grid Container */}
+          <div style={productGridContainerStyles}>
+            {loading ? (
+              <div style={skeletonGridStyles}>
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
               </div>
+            ) : (
+              <>
+                <div style={productGridStyles}>
+                  {filteredAndSortedBooks.map((book) => (
+                    <div
+                      key={book.id}
+                      className="group bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 cursor-pointer flex flex-col h-full hover:shadow-2xl transition-shadow duration-300"
+                      onClick={() => navigate(`/books/${book.id}`)}
+                      tabIndex={0}
+                      role="button"
+                      onKeyDown={e => { if (e.key === 'Enter') navigate(`/book/${book.id}`); }}
+                    >
+                      {/* Image Container */}
+                      <div style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden', backgroundColor: '#f9fafb', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
+                        <img
+                          src={book.images[0].small_url}
+                          alt={book.name}
+                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div style={{ padding: '0.5rem', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Title */}
+                        <h3 className="text-sm text-gray-800 mb-1.5 line-clamp-2 leading-snug transition-colors flex-grow">
+                          {book.name}
+                        </h3>
+
+                        {/* Rating and Sold count */}
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1.5">
+                          <StarRating rating={book.rating_average || 0} />
+                          <div style={{ width: '1px', height: '0.75rem', backgroundColor: '#e5e7eb' }}></div>
+                          <span>Đã bán {book.quantity_sold?.value || 0}</span>
+                        </div>
+
+                        {/* Price */}
+                        {(() => {
+                          const salePrice = book.current_seller?.price ?? book.list_price;
+                          console.log('Book price info:', {
+                            name: book.name,
+                            original_price: book.original_price,
+                            sale_price: salePrice,
+                            percent_discount: book.original_price > salePrice ? Math.round(((book.original_price - salePrice) / book.original_price) * 100) : 0
+                          });
+                          return null;
+                        })()}
+                        <div className="flex items-baseline gap-2 mb-2">
+                          {book.original_price > (book.current_seller?.price ?? book.list_price) ? (
+                            <>
+                              <span className="text-base font-bold text-red-500">
+                                {(book.current_seller?.price ?? book.list_price).toLocaleString()}₫
+                              </span>
+                              <span className="text-xs text-black bg-gray-200 font-semibold px-1.5 py-0.5 rounded ml-1 align-middle">
+                                -{Math.round(((book.original_price - (book.current_seller?.price ?? book.list_price)) / book.original_price) * 100)}%
+                              </span>
+                              
+                            </>
+                          ) : (
+                            <span className="text-base font-bold text-red-500">
+                              {(book.current_seller?.price ?? book.list_price).toLocaleString()}₫
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Shipping */}
+                        <div className="text-xs text-gray-700 flex items-center gap-1">
+                          <img src="/iconnow.png" alt="Now Ship" style={{ height: '1rem' }} />
+                          <span>Giao siêu tốc 2h</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* No Results */}
+                {!loading && filteredAndSortedBooks.length === 0 && (
+                  <div className="text-center py-16">
+                    <div className="text-gray-300 text-8xl mb-6">📚</div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
+                    <p className="text-gray-500 max-w-md mx-auto">
+                      {searchTerm 
+                        ? `Không có sản phẩm nào phù hợp với "${searchTerm}". Hãy thử từ khóa khác hoặc xóa bộ lọc.`
+                        : 'Không có sản phẩm nào trong danh mục này. Hãy thử danh mục khác.'
+                      }
+                    </p>
+                    {(searchTerm || selectedCategory) && (
+                      <button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedCategory('');
+                        }}
+                        className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Xóa bộ lọc
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
