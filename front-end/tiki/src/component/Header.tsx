@@ -4,6 +4,7 @@ import { FaRegFaceGrinWink } from "react-icons/fa6";
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Books } from '../interface/book.interface';
+import CartIcon from './CartIcon';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,12 +154,7 @@ const Header = () => {
                   <span>Tài khoản</span>
                 </div>
                 <div className="border-l border-gray-200 h-5"></div>
-                <div className="relative">
-                  <div className="flex items-center justify-center text-[#0d5cb6] cursor-pointer w-9 h-9 rounded-md hover:bg-[#f0f8ff] transition-colors">
-                    <FiShoppingCart className="text-xl" />
-                    <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-3.5 h-3.5 text-[10px] flex items-center justify-center font-semibold border border-white">0</span>
-                  </div>
-                </div>
+                <CartIcon />
           </div>
         </div>
         <div className="flex justify-start gap-4 text-xs text-[#808089] whitespace-nowrap overflow-hidden text-ellipsis mt-2">

@@ -5,6 +5,7 @@ import {
 import HomeComponent from "./component/BookList";
 import BookDetailComponent from "./component/BookCard";
 import SearchResults from "./component/SearchResults";
+import CartPage from "./component/CartPage";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: "/search",
     Component: SearchResults,
+  },
+  {
+    path: "/cart",
+    Component: CartPage,
   },
 ]);
 

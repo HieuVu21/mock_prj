@@ -6,9 +6,11 @@ import StarRating from "./StarRating";
 import Header from './Header';
 import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
+import { useCart } from '../context/CartContext';
 
 const BookDetailComponent = () => {
   const { id } = useParams();
+  const { addToCart } = useCart();
   const [book, setBook] = useState<Books | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Books[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,21 +31,21 @@ const BookDetailComponent = () => {
           const bookResponse = await fetch(`http://localhost:3000/books/${id}`);
           const bookData = await bookResponse.json();
           setBook(bookData);
-          
+
           // Fetch related books if category is available
           if (bookData.categories && bookData.categories.id) {
             const categoryId = bookData.categories.id;
             // First, get all books in the same category
             const allBooksResponse = await fetch('http://localhost:3000/books');
             const allBooks = await allBooksResponse.json();
-            
+
             // Filter books in the same category (excluding current book)
-            const related = allBooks.filter((b: Books) => 
-              b.id !== id && 
-              b.categories && 
+            const related = allBooks.filter((b: Books) =>
+              b.id !== id &&
+              b.categories &&
               b.categories.id === categoryId
-            ); 
-            
+            );
+
             setRelatedBooks(related);
           }
         } catch (error) {
@@ -83,7 +85,7 @@ const BookDetailComponent = () => {
   // CSS styles for the 3-column layout
   const containerStyles: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: isMobile ? '1fr' : '1fr 1.5fr 1fr',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr 0.8fr',
     gap: '2rem',
     width: '100%',
     position: 'relative'
@@ -127,21 +129,32 @@ const BookDetailComponent = () => {
 
   return (
     <>
+      {/* Top Bar with Freeship message */}
+      <div className="bg-blue-50 py-2">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-sm text-green-600">
+            Freeship đơn từ 45k, giảm nhiều hơn cùng <span className="font-bold">FREESHIP XTRA</span>
+          </div>
+        </div>
+      </div>
+
       <Header />
       <div className=" border-b border-gray-200">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <Breadcrumb 
+          <Breadcrumb
             items={[
               { name: 'Trang chủ', path: '/' },
               { name: getCategoryName(), path: `/?category=${book.categories.id || ''}` },
               { name: book?.name || 'Sản phẩm' }
-            ]} 
+            ]}
           />
         </div>
       </div>
+
       <div className="p-6 bg-gray-100" style={{ minHeight: '100vh' }}>
-        <div style={{ maxWidth: '80rem', margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: '120rem', margin: '0 auto', width: '100%' }}>
           <div style={containerStyles}>
+
             {/* Left Column - Book Images */}
             <div style={leftColumnStyles}>
               <div className="bg-white rounded-lg p-4 flex flex-col items-center sticky top-4">
@@ -149,10 +162,10 @@ const BookDetailComponent = () => {
                   src={book.images[selectedImg]?.large_url}
                   alt={book.name}
                   className="rounded"
-                  style={{ 
-                    width: '100%', 
-                    maxWidth: '24rem', 
-                    height: '24rem', 
+                  style={{
+                    width: '100%',
+                    maxWidth: '24rem',
+                    height: '24rem',
                     objectFit: 'contain',
                     marginBottom: '1rem',
                     border: '1px solid #e5e7eb'
@@ -227,14 +240,14 @@ const BookDetailComponent = () => {
               <div style={spaceYStyles}>
                 {/* Book Title Card */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex">
-                      <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
-                      <span className="text-blue-600 font-medium text-sm">
-                        {getAuthorName()}
-                      </span>
-                    </div>
+                  <div className="flex items-center mb-2">
+                    <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
+                    <span className="text-blue-600 font-medium text-sm">
+                      {getAuthorName()}
+                    </span>
+                  </div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">{book.name}</h1>
-                  
+
                   {/* Rating and Reviews */}
                   <div className="flex items-center">
                     <div className="flex items-center">
@@ -289,30 +302,30 @@ const BookDetailComponent = () => {
 
                 {/* Specifications Card */}
                 {book.specifications && book.specifications.length > 0 && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <div className="bg-white rounded-lg p-6 shadow-sm">
                     <div className="space-y-6">
                       {book.specifications.map((spec, specIndex) => (
                         <div key={specIndex}>
                           <h2 className="text-base font-medium text-gray-800 mb-3">{spec.name}</h2>
                           <div className="border border-gray-200 rounded">
-                          {spec.attributes.map((attr, attrIndex) => (
-                            <div 
-                              key={attrIndex} 
+                            {spec.attributes.map((attr, attrIndex) => (
+                              <div
+                                key={attrIndex}
                                 className={`flex ${attrIndex < spec.attributes.length - 1 ? 'border-b border-gray-200' : ''} ${attrIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                            >
+                              >
                                 <div className="w-1/3 py-3 px-4 text-sm text-gray-500 font-medium">
-                                {attr.name}
+                                  {attr.name}
+                                </div>
+                                <div className="w-2/3 py-3 px-4 text-sm text-gray-900">
+                                  {attr.value}
+                                </div>
                               </div>
-                              <div className="w-2/3 py-3 px-4 text-sm text-gray-900">
-                                {attr.value}
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
                 )}
 
                 {/* Description Card */}
@@ -328,7 +341,7 @@ const BookDetailComponent = () => {
                     </div>
                     {book.description && book.description.length > 200 && (
                       <div className="mt-2 text-right">
-                        <button 
+                        <button
                           onClick={() => setShowFullDescription(!showFullDescription)}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none"
                         >
@@ -347,96 +360,96 @@ const BookDetailComponent = () => {
                   </div>
                 </div>
                 <div>
-                {/* Related Books Section */}
-                {relatedBooks.length > 0 && (
-                  <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
-                    
-                    
-                    <div className="relative">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Sản phẩm tương tự</h3>
+                  {/* Related Books Section */}
+                  {relatedBooks.length > 0 && (
+                    <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
+
+
                       <div className="relative">
-                        <div className="grid grid-cols-4 gap-2">
-                          {relatedBooks.slice(currentPage * 4, (currentPage * 4) + 4).map((relatedBook) => (
-                            <Link 
-                              key={relatedBook.id} 
-                              to={`/books/${relatedBook.id}`}
-                              className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white border border-gray-100"
-                            >
-                              <div className="relative pt-[140%]">
-                                <img 
-                                  src={relatedBook.images?.[0]?.base_url || 'https://via.placeholder.com/100x140'} 
-                                  alt={relatedBook.name}
-                                  className="absolute top-0 left-0 w-full h-full object-cover p-1"
-                                  loading="lazy"
-                                />
-                              </div>
-                              <div className="p-2 flex-1 flex flex-col">
-                                <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                                  {relatedBook.name}
-                                </h3>
-                                <div className="mt-auto">
-                                  <div className="flex flex-col">
-                                    <span className="text-red-600 font-semibold text-xs">
-                                      {relatedBook.list_price ? formatPrice(relatedBook.list_price) : 'NaN'}
-                                    </span>
-                                    {relatedBook.original_price && relatedBook.original_price > relatedBook.list_price && (
-                                      <span className="text-[10px] text-gray-500 line-through">
-                                        {formatPrice(relatedBook.original_price)}
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Sản phẩm tương tự</h3>
+                        <div className="relative">
+                          <div className="grid grid-cols-4 gap-2">
+                            {relatedBooks.slice(currentPage * 4, (currentPage * 4) + 4).map((relatedBook) => (
+                              <Link
+                                key={relatedBook.id}
+                                to={`/books/${relatedBook.id}`}
+                                className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white border border-gray-100"
+                              >
+                                <div className="relative pt-[140%]">
+                                  <img
+                                    src={relatedBook.images?.[0]?.base_url || 'https://via.placeholder.com/100x140'}
+                                    alt={relatedBook.name}
+                                    className="absolute top-0 left-0 w-full h-full object-cover p-1"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div className="p-2 flex-1 flex flex-col">
+                                  <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                                    {relatedBook.name}
+                                  </h3>
+                                  <div className="mt-auto">
+                                    <div className="flex flex-col">
+                                      <span className="text-red-600 font-semibold text-xs">
+                                        {relatedBook.list_price ? formatPrice(relatedBook.list_price) : 'NaN'}
                                       </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center mt-1">
-                                    <StarRating rating={relatedBook.rating_average || 0} />
+                                      {relatedBook.original_price && relatedBook.original_price > relatedBook.list_price && (
+                                        <span className="text-[10px] text-gray-500 line-through">
+                                          {formatPrice(relatedBook.original_price)}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center mt-1">
+                                      <StarRating rating={relatedBook.rating_average || 0} />
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </Link>
-                          ))}
+                              </Link>
+                            ))}
+                          </div>
+
+                          {/* Next button overlay */}
+                          {relatedBooks.length > 4 && (currentPage + 1) * 4 < relatedBooks.length && (
+                            <button
+                              onClick={() => setCurrentPage(prev => prev + 1)}
+                              className="absolute right-6 top-1/2 -translate-y-1/2 translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 10
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Previous button */}
+                          {currentPage > 0 && (
+                            <button
+                              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 10
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
-                        
-                        {/* Next button overlay */}
-                        {relatedBooks.length > 4 && (currentPage + 1) * 4 < relatedBooks.length && (
-                          <button
-                            onClick={() => setCurrentPage(prev => prev + 1)}
-                            className="absolute right-6 top-1/2 -translate-y-1/2 translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              zIndex: 10
-                            }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        )}
-                        
-                        {/* Previous button */}
-                        {currentPage > 0 && (
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              zIndex: 10
-                            }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                        )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 </div>
               </div>
             </div>
@@ -449,8 +462,8 @@ const BookDetailComponent = () => {
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mr-2">
                       {book.current_seller?.logo ? (
-                        <img 
-                          src={book.current_seller.logo} 
+                        <img
+                          src={book.current_seller.logo}
                           alt={book.current_seller.name}
                           className="w-6 h-6 rounded-full object-cover"
                         />
@@ -465,7 +478,7 @@ const BookDetailComponent = () => {
                         {book.current_seller.name}
                       </div>
                       <div className="flex items-center text-xs text-gray-500">
-                        
+
                         {book.current_seller.is_offline_installment_supported && (
                           <span className="flex items-center">
                             <svg className="w-3.5 h-3.5 text-green-500 mr-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -474,6 +487,12 @@ const BookDetailComponent = () => {
                             Chính hãng
                           </span>
                         )}
+                        <div className="flex items-center text-xs text-blue-600">
+                          <svg className="w-3.5 h-3.5 text-blue-600 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          OFFICIAL
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -484,7 +503,7 @@ const BookDetailComponent = () => {
                   <div className="text-xl text-gray-700 mb-2">Số lượng</div>
                   <div className="flex items-center mb-2">
                     <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                      <button 
+                      <button
                         className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
                         onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                         disabled={quantity <= 1}
@@ -494,7 +513,7 @@ const BookDetailComponent = () => {
                       <span className="px-4 py-1 border-l border-r border-gray-300 text-center w-12">
                         {quantity}
                       </span>
-                      <button 
+                      <button
                         className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
                         onClick={() => setQuantity(prev => prev + 1)}
                       >
@@ -502,38 +521,79 @@ const BookDetailComponent = () => {
                       </button>
                     </div>
                   </div>
-                  </div>
+                </div>
 
                 {/* Price Section */}
                 <div className="mb-4">
                   <div className="text-xl font-bold text-gray-700">
-                      Tạm tính
+                    Tạm tính
                   </div>
-                  <div className="text-2xl font-bold text-red-600 mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {(book.current_seller?.price ? formatPrice(book.current_seller.price * quantity) : (book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'))}
                   </div>
                 </div>
 
-                
+
 
                 {/* Action Buttons */}
                 <div className="mb-4">
-                  <button 
-                    className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-orange-500 hover:bg-orange-600 transition-colors mb-2"
+                  <button
+                    className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-red-600 hover:bg-red-700 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Mua ngay
                   </button>
-                  <button 
-                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-orange-500 text-orange-500 hover:bg-orange-50 transition-colors"
+                  <button
+                    onClick={() => {
+                      if (book) {
+                        addToCart({
+                          bookId: book.id,
+                          name: book.name,
+                          price: book.current_seller?.price || book.list_price,
+                          originalPrice: book.original_price,
+                          quantity: quantity,
+                          image: book.images[0]?.large_url || book.images[0]?.base_url || '',
+                          seller: {
+                            id: book.current_seller?.id || 0,
+                            name: book.current_seller?.name || 'Tiki Trading',
+                            logo: book.current_seller?.logo
+                          }
+                        });
+                      }
+                    }}
+                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Thêm vào giỏ
                   </button>
+                  <button
+                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
+                  >
+                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Mua trước trả sau
+                  </button>
+                </div>
+
+                {/* Shipping Info */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-14 0a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2" />
+                    </svg>
+                    Giao hàng miễn phí từ 45k
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Giao trong 2-4 giờ
+                  </div>
                 </div>
               </div>
             </div>
