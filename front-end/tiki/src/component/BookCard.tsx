@@ -6,9 +6,11 @@ import StarRating from "./StarRating";
 import Header from './Header';
 import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
+import { useCart } from '../context/CartContext';
 
 const BookDetailComponent = () => {
   const { id } = useParams();
+  const { addToCart } = useCart();
   const [book, setBook] = useState<Books | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Books[]>([]);
   const [loading, setLoading] = useState(true);
@@ -544,6 +546,23 @@ const BookDetailComponent = () => {
                     Mua ngay
                   </button>
                   <button
+                    onClick={() => {
+                      if (book) {
+                        addToCart({
+                          bookId: book.id,
+                          name: book.name,
+                          price: book.current_seller?.price || book.list_price,
+                          originalPrice: book.original_price,
+                          quantity: quantity,
+                          image: book.images[0]?.large_url || book.images[0]?.base_url || '',
+                          seller: {
+                            id: book.current_seller?.id || 0,
+                            name: book.current_seller?.name || 'Tiki Trading',
+                            logo: book.current_seller?.logo
+                          }
+                        });
+                      }
+                    }}
                     className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
