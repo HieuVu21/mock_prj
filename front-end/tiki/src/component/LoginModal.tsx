@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import bcrypt from 'bcryptjs';
 import { useNavigate } from 'react-router-dom';
-// ...existing code...
-
-const LoginModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const LoginModal = ({ isOpen, onClose, onSwitchToRegister }: { 
+  isOpen: boolean; 
+  onClose: () => void;
+  onSwitchToRegister: () => void;
+}) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -19,27 +20,39 @@ const LoginModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
       setError('');
     }
   }, [isOpen]);
-  const baseUrl = 'https://be-mock-project.vercel.app'; // Sửa lại cho đúng endpoint local json-server
+  // const baseUrl = 'https://be-mock-project.vercel.app'; // Sửa lại cho đúng endpoint local json-server
+  const baseUrl = 'http://localhost:3000'; // Base URL for API requests
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      // Lấy user theo email
-      const res = await fetch(baseUrl + `/users?email=${encodeURIComponent(email)}`);
-      if (!res.ok) throw new Error('Lỗi server');
-      const users = await res.json();
-      if (!users.length) throw new Error('Email không tồn tại');
-      const user = users[0];
-  // So sánh password với bcryptjs
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error('Mật khẩu không đúng');
+      const res = await fetch(baseUrl + `/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Lỗi server');
+      }
+
+      const data = await res.json();
+      const { user, accessToken } = data;
+      
       // Kiểm tra role
       if (!user.role) throw new Error('Tài khoản không có quyền truy cập');
-      // Đăng nhập thành công
-      const token = btoa(`${user.id}:${user.email}`);
-      localStorage.setItem('token', token);
+      
+      // Lưu token
+      localStorage.setItem('token', accessToken);
+      // localStorage.setItem('token', token);
       onClose();
       if (user.role === 'user') {
         navigate('/');

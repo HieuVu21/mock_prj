@@ -16,7 +16,10 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
+  // const baseURL = 'https://be-mock-project.vercel.app';
+  //  // Base URL for API requests
+  const baseURL = 'https:localhost'; // Base URL for API requests
+
   const navigate = useNavigate();
 
   // Kiểm tra trạng thái đăng nhập khi component mount
@@ -228,7 +231,9 @@ const Header = () => {
                     <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-3.5 h-3.5 text-[10px] flex items-center justify-center font-semibold border border-white">0</span>
                   </div>
                 </div>
-  <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+  <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSwitchToRegister={function (): void {
+                  throw new Error('Function not implemented.');
+                } } />
           </div>
         </div>
         <div className="flex justify-start gap-4 text-xs text-[#808089] whitespace-nowrap overflow-hidden text-ellipsis mt-2">
