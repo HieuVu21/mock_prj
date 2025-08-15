@@ -1,0 +1,136 @@
+import React, { useState, useEffect } from 'react';
+import bcrypt from 'bcryptjs';
+import { useNavigate } from 'react-router-dom';
+// ...existing code...
+
+const LoginModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  // Reset form khi modal đóng
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setPassword('');
+      setError('');
+    }
+  }, [isOpen]);
+  const baseUrl = 'https://be-mock-project.vercel.app'; // Sửa lại cho đúng endpoint local json-server
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      // Lấy user theo email
+      const res = await fetch(baseUrl + `/users?email=${encodeURIComponent(email)}`);
+      if (!res.ok) throw new Error('Lỗi server');
+      const users = await res.json();
+      if (!users.length) throw new Error('Email không tồn tại');
+      const user = users[0];
+  // So sánh password với bcryptjs
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error('Mật khẩu không đúng');
+      // Kiểm tra role
+      if (!user.role) throw new Error('Tài khoản không có quyền truy cập');
+      // Đăng nhập thành công
+      const token = btoa(`${user.id}:${user.email}`);
+      localStorage.setItem('token', token);
+      onClose();
+      if (user.role === 'user') {
+        navigate('/');
+      } else if (user.role === 'admin') {
+        navigate('/admin');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Có lỗi xảy ra');
+    } finally {
+      setLoading(false);
+    }
+  };
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.53)' }}>
+      <div className="bg-white rounded-lg shadow-lg flex w-[700px] h-[370px] relative">
+        {/* Left side */}
+        <form className="flex-1 p-8 flex flex-col justify-center" onSubmit={handleLogin}>
+          <h2 className="text-2xl font-bold mb-2">Đăng nhập bằng email</h2>
+          <p className="mb-6 text-gray-600">Nhập email và mật khẩu tài khoản Tiki</p>
+          <input
+            type="email"
+            placeholder="acb@email.com"
+            className="border-b w-full mb-4 text-base outline-none py-2"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+          <div className="relative mb-4">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Mật khẩu"
+              className="border-b w-full text-base outline-none py-2 pr-16"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+            <button type="button" className="absolute right-0 top-2 text-[#189eff] text-sm" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? "Ẩn" : "Hiện"}
+            </button>
+          </div>
+          {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
+          <button
+            type="submit"
+            className="bg-[#ff424e] text-white rounded-md py-3 w-full text-xl font-semibold mb-4"
+            disabled={loading}
+          >
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          </button>
+          <div className="flex justify-between text-xs mb-2">
+            <a href="#" className="text-[#189eff]">Quên mật khẩu?</a>
+            <span>
+              Chưa có tài khoản? <a href="#" className="text-[#189eff] font-medium">Tạo tài khoản</a>
+            </span>
+          </div>
+        </form>
+        {/* Right side */}
+        <div className="flex-1 bg-[#eaf6ff] flex flex-col items-center justify-center rounded-r-lg">
+          <img src="/public/img_login.png" alt="Tiki Icon" className="w-32 mb-4" />
+          <div className="text-[#189eff] text-lg font-semibold">Mua sắm tại Tiki</div>
+          <div className="text-[#189eff] text-sm">Siêu ưu đãi mỗi ngày</div>
+        </div>
+        {/* Close button */}
+      </div>
+      <button
+        onClick={onClose}
+        className="fixed z-[60]"
+        style={{
+          top: 'calc(50% - 185px - 24px)',
+          right: 'calc(50% - 350px - 24px)',
+          width: '48px',
+          height: '48px',
+          background: '#fff',
+          borderRadius: '50%',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0
+        }}
+        aria-label="Đóng"
+      >
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="14" fill="none" />
+          <path d="M9 9L19 19M19 9L9 19" stroke="#8B8B8B" strokeWidth="2.2" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+export default LoginModal;

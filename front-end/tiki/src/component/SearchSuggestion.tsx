@@ -12,6 +12,7 @@ const SearchSuggestion = ({ query, onSelect, onClose }: SearchSuggestionProps) =
   const [suggestions, setSuggestions] = useState<Books[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ const SearchSuggestion = ({ query, onSelect, onClose }: SearchSuggestionProps) =
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/books?q=${encodeURIComponent(query)}&_limit=5`
+          baseURL + `/books?q=${encodeURIComponent(query)}&_limit=5`
         );
         const data = await response.json();
         setSuggestions(data);

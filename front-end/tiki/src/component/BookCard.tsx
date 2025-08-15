@@ -8,6 +8,7 @@ import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
 
 const BookDetailComponent = () => {
+  const baseUrl = 'https://be-mock-project.vercel.app';
   const { id } = useParams();
   const [book, setBook] = useState<Books | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Books[]>([]);
@@ -26,7 +27,7 @@ const BookDetailComponent = () => {
         try {
           setLoading(true);
           // Fetch book details
-          const bookResponse = await fetch(`http://localhost:3000/books/${id}`);
+          const bookResponse = await fetch(baseUrl + `/books/${id}`);
           const bookData = await bookResponse.json();
           setBook(bookData);
           
@@ -34,7 +35,7 @@ const BookDetailComponent = () => {
           if (bookData.categories && bookData.categories.id) {
             const categoryId = bookData.categories.id;
             // First, get all books in the same category
-            const allBooksResponse = await fetch('http://localhost:3000/books');
+            const allBooksResponse = await fetch(baseUrl+'/books');
             const allBooks = await allBooksResponse.json();
             
             // Filter books in the same category (excluding current book)

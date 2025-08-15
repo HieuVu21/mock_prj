@@ -12,6 +12,7 @@ const SearchResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [screenSize, setScreenSize] = useState(window.innerWidth);
+  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +26,7 @@ const SearchResults = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/books?q=${encodeURIComponent(query)}`
+          baseURL + `/books?q=${encodeURIComponent(query)}`
         );
         if (!response.ok) throw new Error('Failed to fetch results');
         const data = await response.json();
@@ -78,10 +79,6 @@ const SearchResults = () => {
     transition: 'box-shadow 0.2s ease-in-out'
   };
 
-  const cardHoverStyles: React.CSSProperties = {
-    ...cardStyles,
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-  };
 
   const imageContainerStyles: React.CSSProperties = {
     aspectRatio: '2/3',

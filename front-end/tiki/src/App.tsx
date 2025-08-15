@@ -1,10 +1,11 @@
 import {
   createBrowserRouter,
   RouterProvider,
-} from "react-router";
+} from "react-router-dom";
 import HomeComponent from "./component/BookList";
 import BookDetailComponent from "./component/BookCard";
 import SearchResults from "./component/SearchResults";
+import Profile from "./pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: "/search",
     Component: SearchResults,
+  },
+  {
+    path: "/profile",
+    Component: Profile,
   },
 ]);
 

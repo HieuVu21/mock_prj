@@ -1,17 +1,47 @@
-import { FiHome, FiShoppingCart, FiX } from 'react-icons/fi';
+import { FiHome, FiShoppingCart, FiX, FiLogOut, FiUser } from 'react-icons/fi';
 import { BsSearch } from 'react-icons/bs';
 import { FaRegFaceGrinWink } from "react-icons/fa6";
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import type { Books } from '../interface/book.interface';
+import LoginModal from './LoginModal';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Books[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
   const navigate = useNavigate();
+
+  // Kiểm tra trạng thái đăng nhập khi component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setShowDropdown(false);
+    // Có thể thêm xử lý đăng xuất khác ở đây
+  };
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle click outside to close suggestions
   useEffect(() => {
@@ -36,7 +66,7 @@ const Header = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/books?q=${encodeURIComponent(searchQuery)}&_limit=5`
+          baseURL + `/books?q=${encodeURIComponent(searchQuery)}&_limit=5`
         );
         const data = await response.json();
         setSuggestions(data);
@@ -144,14 +174,53 @@ const Header = () => {
               </form>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors"
-                onClick={() => navigate('/')}>
+                  onClick={() => navigate('/')}> 
                   <FiHome className="text-lg" />
                   <span>Trang chủ</span>
                 </div>
-                <div className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors">
-                  <FaRegFaceGrinWink className="text-lg" />
-                  <span>Tài khoản</span>
-                </div>
+                {isLoggedIn ? (
+                  <div className="relative" ref={dropdownRef}>
+                    <div
+                      className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowDropdown(!showDropdown)}
+                    >
+                      <FaRegFaceGrinWink className="text-lg" />
+                      <span>Tài khoản</span>
+                    </div>
+                    
+                    {/* Dropdown Menu */}
+                    {showDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <FiUser />
+                          <span>Thông tin cá nhân</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsLoggedIn(false);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                        >
+                          <FiLogOut />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-1 text-[#808089] no-underline text-xs whitespace-nowrap cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    <FaRegFaceGrinWink className="text-lg" />
+                    <span>Đăng nhập</span>
+                  </div>
+                )}
                 <div className="border-l border-gray-200 h-5"></div>
                 <div className="relative">
                   <div className="flex items-center justify-center text-[#0d5cb6] cursor-pointer w-9 h-9 rounded-md hover:bg-[#f0f8ff] transition-colors">
@@ -159,6 +228,7 @@ const Header = () => {
                     <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-3.5 h-3.5 text-[10px] flex items-center justify-center font-semibold border border-white">0</span>
                   </div>
                 </div>
+  <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
           </div>
         </div>
         <div className="flex justify-start gap-4 text-xs text-[#808089] whitespace-nowrap overflow-hidden text-ellipsis mt-2">
