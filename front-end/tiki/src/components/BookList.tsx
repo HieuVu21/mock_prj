@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import type { Books } from '../interface/book.interface';
 import Header from './Header';
-import Footer from './Footer';
+import Footer from '../component/Footer';
 import SkeletonCard from './SkeletonCard'; // Import SkeletonCard
 import StarRating from './StarRating'; // Import StarRating
 
