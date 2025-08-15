@@ -4,7 +4,7 @@ import type { Books } from "../interface/book.interface";
 import DescriptionComponent from "./DescriptionComponent";
 import StarRating from "./StarRating";
 import Header from './Header';
-import Footer from './Footer';
+import Footer from '../component/Footer';
 import Breadcrumb from './Breadcrumb';
 
 const BookDetailComponent = () => {
