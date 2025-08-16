@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: { 
   isOpen: boolean; 
@@ -27,7 +28,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
   }, [isOpen]);
 
   const baseUrl = 'http://localhost:3000'; // Base URL for API requests
-
+// const baseUrl = 'https://be-mock-project.vercel.app'
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -62,8 +63,8 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
       const data = await res.json();
       
       // Đăng ký thành công
+      toast.success('Đăng ký thành công');
       onClose();
-      // Có thể chuyển người dùng đến trang đăng nhập hoặc tự động đăng nhập
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra');
@@ -79,63 +80,63 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
       <div className="bg-white rounded-lg shadow-lg flex w-[700px] h-[450px] relative">
         {/* Left side - Form */}
         <form className="flex-1 p-8 flex flex-col justify-center" onSubmit={handleRegister}>
-          <h2 className="text-2xl font-semibold mb-6">Tạo tài khoản</h2>
-          
-          {error && (
-            <div className="mb-4 p-2 bg-red-100 text-red-600 rounded">
-              {error}
-            </div>
-          )}
+          <h2 className="text-2xl font-bold mb-2">Tạo tài khoản bằng email</h2>
+          <p className="mb-6 text-gray-600">Nhập thông tin để tạo tài khoản Tiki</p>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          {error && <div className="text-red-500 text-sm mb-3">{error}</div>}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Tên người dùng</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="email"
+            placeholder="acb@email.com"
+            className="border-b w-full mb-4 text-base outline-none py-2"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-          <div className="mb-4 relative">
-            <label className="block text-sm font-medium mb-1">Mật khẩu</label>
+          <input
+            type="text"
+            placeholder="Tên người dùng"
+            className="border-b w-full mb-4 text-base outline-none py-2"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+
+          <div className="relative mb-4">
             <input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Mật khẩu"
+              className="border-b w-full text-base outline-none py-2 pr-16"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             <button
               type="button"
+              className="absolute right-0 top-2 text-[#189eff] text-sm"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-8 text-gray-500"
             >
-              {showPassword ? "Ẩn" : "Hiện"}
+              {showPassword ? 'Ẩn' : 'Hiện'}
             </button>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-1">Xác nhận mật khẩu</label>
+          <div className="relative mb-4">
             <input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Xác nhận mật khẩu"
+              className="border-b w-full text-base outline-none py-2"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
+            <button
+              type="button"
+              className="absolute right-0 top-2 text-[#189eff] text-sm"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Ẩn' : 'Hiện'}
+            </button>
           </div>
 
           <button
@@ -143,18 +144,17 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
             disabled={loading}
             className="bg-[#ff424e] text-white rounded-md py-3 w-full text-xl font-semibold mb-4"
           >
-            {loading ? 'Đang xử lý...' : 'Đăng ký'}
+            {loading ? 'Đang xử lý...' : 'Tạo tài khoản'}
           </button>
-          <div className="flex justify-center text-xs mb-2">
+
+          <div className="flex justify-between text-xs mb-2">
+            <span className="text-gray-500"></span>
             <span>
-              Đã có tài khoản?{" "}
+              Đã có tài khoản?{' '}
               <button
                 type="button"
-                onClick={() => {
-                  onClose();
-                  onSwitchToLogin();
-                }}
-                className="text-[#189eff] font-medium hover:underline"
+                onClick={() => { onClose(); onSwitchToLogin(); }}
+                className="text-[#189eff] font-medium hover:underline border-none bg-transparent p-0 cursor-pointer"
               >
                 Đăng nhập
               </button>
@@ -163,22 +163,39 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
         </form>
 
         {/* Right side - Image */}
-        <div className="flex-1 bg-gray-100 flex flex-col items-center justify-center p-8">
+        <div className="flex-1 bg-[#eaf6ff] flex flex-col items-center justify-center rounded-r-lg">
           <img src="/public/img_login.png" alt="Tiki Icon" className="w-32 mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Chào mừng đến với Tiki</h3>
-          <p className="text-gray-600 text-center">
-            Đăng ký để trải nghiệm dịch vụ mua sắm tốt nhất
-          </p>
+          <div className="text-[#189eff] text-lg font-semibold">Mua sắm tại Tiki</div>
+          <div className="text-[#189eff] text-sm">Siêu ưu đãi mỗi ngày</div>
         </div>
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
       </div>
+
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="fixed z-[60]"
+        style={{
+          top: 'calc(50% - 225px - 24px)',
+          right: 'calc(50% - 350px - 24px)',
+          width: '48px',
+          height: '48px',
+          background: '#fff',
+          borderRadius: '50%',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0
+        }}
+        aria-label="Đóng"
+      >
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="14" fill="none" />
+          <path d="M9 9L19 19M19 9L9 19" stroke="#8B8B8B" strokeWidth="2.2" strokeLinecap="round"/>
+        </svg>
+      </button>
     </div>
   );
 };

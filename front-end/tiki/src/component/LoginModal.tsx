@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-const LoginModal = ({ isOpen, onClose, onSwitchToRegister }: { 
+import toast from 'react-hot-toast';
+const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: { 
   isOpen: boolean; 
   onClose: () => void;
   onSwitchToRegister: () => void;
+  onLoginSuccess: () => void;
 }) => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -53,6 +55,8 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }: {
       // Lưu token
       localStorage.setItem('token', accessToken);
       // localStorage.setItem('token', token);
+      toast.success('Đăng nhập thành công');
+      onLoginSuccess();
       onClose();
       if (user.role === 'user') {
         navigate('/');
@@ -105,7 +109,14 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }: {
           <div className="flex justify-between text-xs mb-2">
             <a href="#" className="text-[#189eff]">Quên mật khẩu?</a>
             <span>
-              Chưa có tài khoản? <a href="#" className="text-[#189eff] font-medium">Tạo tài khoản</a>
+              Chưa có tài khoản?{" "}
+              <button 
+                type="button"
+                onClick={onSwitchToRegister} 
+                className="text-[#189eff] font-medium hover:underline border-none bg-transparent p-0 cursor-pointer"
+              >
+                Tạo tài khoản
+              </button>
             </span>
           </div>
         </form>

@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import type { Books } from '../interface/book.interface';
 import LoginModal from './LoginModal';
+import RegisterModal from './RegisterModal';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,6 +13,7 @@ const Header = () => {
   const [suggestions, setSuggestions] = useState<Books[]>([]);
   const [loading, setLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -27,6 +29,14 @@ const Header = () => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
   }, []);
+
+  // Cập nhật trạng thái đăng nhập khi đóng modal đăng nhập
+  useEffect(() => {
+    if (!showLoginModal) {
+      const token = localStorage.getItem('token');
+      setIsLoggedIn(!!token);
+    }
+  }, [showLoginModal]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -231,9 +241,23 @@ const Header = () => {
                     <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-3.5 h-3.5 text-[10px] flex items-center justify-center font-semibold border border-white">0</span>
                   </div>
                 </div>
-  <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSwitchToRegister={function (): void {
-                  throw new Error('Function not implemented.');
-                } } />
+  <LoginModal 
+    isOpen={showLoginModal} 
+    onClose={() => setShowLoginModal(false)} 
+    onSwitchToRegister={() => {
+      setShowLoginModal(false);
+      setShowRegisterModal(true);
+    }} 
+    onLoginSuccess={() => setIsLoggedIn(true)}
+  />
+  <RegisterModal 
+    isOpen={showRegisterModal} 
+    onClose={() => setShowRegisterModal(false)}
+    onSwitchToLogin={() => {
+      setShowRegisterModal(false);
+      setShowLoginModal(true);
+    }}
+  />
           </div>
         </div>
         <div className="flex justify-start gap-4 text-xs text-[#808089] whitespace-nowrap overflow-hidden text-ellipsis mt-2">

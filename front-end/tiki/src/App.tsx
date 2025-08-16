@@ -2,6 +2,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 import HomeComponent from "./component/BookList";
 import BookDetailComponent from "./component/BookCard";
 import SearchResults from "./component/SearchResults";
@@ -27,7 +28,12 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
+    </>
+  );
 }
 
 export default App;
