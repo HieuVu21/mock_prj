@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import type { Books } from '../interface/book.interface';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
+import { useCart } from '../contexts/CartContext';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +24,8 @@ const Header = () => {
   const baseURL = 'https:localhost'; // Base URL for API requests
 
   const navigate = useNavigate();
+  const { cartItems } = useCart();
+  const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   // Kiểm tra trạng thái đăng nhập khi component mount
   useEffect(() => {
@@ -40,8 +43,9 @@ const Header = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setIsLoggedIn(false);
     setShowDropdown(false);
-    // Có thể thêm xử lý đăng xuất khác ở đây
+    navigate('/'); // Chuyển hướng về trang chủ
   };
 
   // Handle click outside dropdown
@@ -213,10 +217,7 @@ const Header = () => {
                           <span>Thông tin cá nhân</span>
                         </Link>
                         <button
-                          onClick={() => {
-                            handleLogout();
-                            setIsLoggedIn(false);
-                          }}
+                          onClick={handleLogout}
                           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
                         >
                           <FiLogOut />
@@ -236,9 +237,15 @@ const Header = () => {
                 )}
                 <div className="border-l border-gray-200 h-5"></div>
                 <div className="relative">
-                  <div className="flex items-center justify-center text-[#0d5cb6] cursor-pointer w-9 h-9 rounded-md hover:bg-[#f0f8ff] transition-colors">
+                  <div className="flex items-center justify-center text-[#0d5cb6] cursor-pointer w-9 h-9 rounded-md hover:bg-[#f0f8ff] transition-colors"
+                    onClick={() => navigate('/cart')}
+                  >
                     <FiShoppingCart className="text-xl" />
-                    <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-3.5 h-3.5 text-[10px] flex items-center justify-center font-semibold border border-white">0</span>
+                                        {totalItemsInCart > 0 && (
+                      <span className="absolute top-0 right-0 bg-[#ff424e] text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-semibold border border-white">
+                        {totalItemsInCart}
+                      </span>
+                    )}
                   </div>
                 </div>
   <LoginModal 

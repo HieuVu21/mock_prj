@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
 const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: { 
   isOpen: boolean; 
   onClose: () => void;
@@ -29,8 +30,11 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
     try {
-      const res = await fetch(baseUrl + `/login`, {
+      console.log('Attempting login with:', { email, password });
+      
+      const res = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -43,33 +47,59 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
 
       if (!res.ok) {
         const errorData = await res.json();
+        console.error('Login error:', errorData);
         throw new Error(errorData.message || 'Lỗi server');
       }
 
       const data = await res.json();
+      console.log('Login response data:', data);
+      
       const { user, accessToken } = data;
-      
-      // Kiểm tra role
-      if (!user.role) throw new Error('Tài khoản không có quyền truy cập');
-      
-      // Lưu token
+
+      // Kiểm tra response structure
+      if (!accessToken) {
+        throw new Error('Không nhận được token từ server');
+      }
+
+      if (!user || !user.role) {
+        throw new Error('Thông tin người dùng không hợp lệ');
+      }
+
+      // 1. Lưu token vào localStorage TRƯỚC
       localStorage.setItem('token', accessToken);
-      // localStorage.setItem('token', token);
+      console.log('Token saved:', accessToken.substring(0, 20) + '...');
+
+      // 2. Đợi một chút để đảm bảo token đã được lưu
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // 3. Phát sự kiện auth-change
+      window.dispatchEvent(new CustomEvent('auth-change'));
+      console.log('Auth change event dispatched');
+
+      // 4. Các hành động UI
       toast.success('Đăng nhập thành công');
       onLoginSuccess();
+
+      // 5. Đợi thêm một chút trước khi navigate để đảm bảo cart được load
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       onClose();
+      
       if (user.role === 'user') {
         navigate('/');
       } else if (user.role === 'admin') {
         navigate('/admin');
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
   };
+
   if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.53)' }}>
       <div className="bg-white rounded-lg shadow-lg flex w-[700px] h-[370px] relative">
@@ -77,6 +107,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
         <form className="flex-1 p-8 flex flex-col justify-center" onSubmit={handleLogin}>
           <h2 className="text-2xl font-bold mb-2">Đăng nhập bằng email</h2>
           <p className="mb-6 text-gray-600">Nhập email và mật khẩu tài khoản Tiki</p>
+          
           <input
             type="email"
             placeholder="acb@email.com"
@@ -85,6 +116,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
             onChange={e => setEmail(e.target.value)}
             required
           />
+          
           <div className="relative mb-4">
             <input
               type={showPassword ? "text" : "password"}
@@ -98,7 +130,9 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
               {showPassword ? "Ẩn" : "Hiện"}
             </button>
           </div>
+          
           {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
+          
           <button
             type="submit"
             className="bg-[#ff424e] text-white rounded-md py-3 w-full text-xl font-semibold mb-4"
@@ -106,6 +140,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
           >
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
+          
           <div className="flex justify-between text-xs mb-2">
             <a href="#" className="text-[#189eff]">Quên mật khẩu?</a>
             <span>
@@ -120,13 +155,13 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
             </span>
           </div>
         </form>
+        
         {/* Right side */}
         <div className="flex-1 bg-[#eaf6ff] flex flex-col items-center justify-center rounded-r-lg">
           <img src="/public/img_login.png" alt="Tiki Icon" className="w-32 mb-4" />
           <div className="text-[#189eff] text-lg font-semibold">Mua sắm tại Tiki</div>
           <div className="text-[#189eff] text-sm">Siêu ưu đãi mỗi ngày</div>
         </div>
-        {/* Close button */}
       </div>
       <button
         onClick={onClose}

@@ -7,6 +7,9 @@ import HomeComponent from "./component/BookList";
 import BookDetailComponent from "./component/BookCard";
 import SearchResults from "./component/SearchResults";
 import Profile from "./pages/Profile";
+import CartPage from "./pages/CartPage";
+import ProtectedRoute from "./component/ProtectedRoute";
+import { CartProvider } from "./contexts/CartContext";
 
 const router = createBrowserRouter([
   {
@@ -23,16 +26,20 @@ const router = createBrowserRouter([
   },
   {
     path: "/profile",
-    Component: Profile,
+    element: <ProtectedRoute><Profile /></ProtectedRoute>,
+  },
+  {
+    path: "/cart",
+    element: <ProtectedRoute><CartPage /></ProtectedRoute>,
   },
 ]);
 
 function App() {
   return (
-    <>
+    <CartProvider>
       <RouterProvider router={router} />
       <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
-    </>
+    </CartProvider>
   );
 }
 

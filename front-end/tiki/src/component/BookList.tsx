@@ -318,20 +318,7 @@ const HomeComponent = () => {
                           <span>Đã bán {book.quantity_sold?.value || 0}</span>
                         </div>
 
-                        {/* Price */}
-                        {(() => {
-                          const salePrice = book.current_seller?.price ?? book.list_price;
-                          console.log('Book price info:', {
-                            name: book.name,
-                            original_price: book.original_price,
-                            sale_price: salePrice,
-                            percent_discount:
-                              book.original_price > salePrice
-                                ? Math.round(((book.original_price - salePrice) / book.original_price) * 100)
-                                : 0,
-                          });
-                          return null;
-                        })()}
+                        
                         <div className="flex items-baseline gap-2 mb-2">
                           {book.original_price > (book.current_seller?.price ?? book.list_price) ? (
                             <>

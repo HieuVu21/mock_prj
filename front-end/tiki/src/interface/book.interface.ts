@@ -66,3 +66,32 @@ export interface Books {
   publisher_vn?: string;
   manufacturer?: string;
 }
+export interface ProductApiResponse {
+  docs: Books[];
+  totalDocs: number;
+  limit: number;
+  totalPages: number;
+  page: number;
+  pagingCounter: number;
+  hasPrevPage: boolean;
+  hasNextPage: boolean;
+  prevPage: number | null;
+  nextPage: number | null;
+}
+export interface Category {
+  id: number;
+  name: string;
+  is_leaf?: boolean; // Thêm dấu ? để cho biết nó có thể không có
+}
+
+export interface Cart {
+  id: string;
+  userId: string;
+  items: CartItem[];
+}
+
+export interface CartItem extends Books {
+  quantity: number;
+  cartItemId: string; // Unique ID for the item in the cart
+  selected?: boolean; // To manage selection state in the UI
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import type { Books } from "../interface/book.interface";
+import { useCart } from "../contexts/CartContext";
 import DescriptionComponent from "./DescriptionComponent";
 import StarRating from "./StarRating";
 import Header from './Header';
@@ -20,6 +21,7 @@ const BookDetailComponent = () => {
   const [quantity, setQuantity] = useState(1);
   const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
   const itemsPerPage = 8; // 4 columns x 2 rows
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchBookAndRelated = async () => {
@@ -335,11 +337,15 @@ const BookDetailComponent = () => {
                         >
                           {showFullDescription ? (
                             <span className="flex items-center justify-end">
-                              Thu gọn <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                              Thu gọn <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </span>
                           ) : (
                             <span className="flex items-center justify-end">
-                              Xem thêm <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                              Xem thêm <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
                             </span>
                           )}
                         </button>
@@ -528,6 +534,7 @@ const BookDetailComponent = () => {
                     Mua ngay
                   </button>
                   <button 
+                    onClick={() => book && addToCart(book, quantity)}
                     className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-orange-500 text-orange-500 hover:bg-orange-50 transition-colors"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -1,13 +1,11 @@
 export interface User {
-  id: number;
+  id: number | string;
   email: string;
-  password: string;
-  confirmPassword?: string;
-  role: string;
+  password?: string; // Mật khẩu là optional
+  fullName?: string; // Đổi 'name' thành 'fullName' và cho phép optional
+  role?: 'admin' | 'customer' | 'user'; // Thêm 'user' và cho phép optional
+  status?: 'active' | 'inactive' | 'banned';
+  createdAt?: string;
   address?: string;
-  birthDay?: string;
-  fullName?: string;
-  gender?: string;
-  nickName?: string;
   phone?: string;
 }
