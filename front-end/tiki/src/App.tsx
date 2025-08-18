@@ -11,6 +11,7 @@ import CartPage from "./pages/CartPage";
 import ProtectedRoute from "./component/ProtectedRoute";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import OrderDetail from "./pages/OrderDetail";
 
 const router = createBrowserRouter([
   {
@@ -30,8 +31,16 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><Profile /></ProtectedRoute>,
   },
   {
+    path: "/profile/order",
+    element: <ProtectedRoute><Profile /></ProtectedRoute>,
+  },
+  {
     path: "/cart",
     element: <ProtectedRoute><CartPage /></ProtectedRoute>,
+  },
+  {
+    path: "/orders/:id",
+    element: <ProtectedRoute><OrderDetail /></ProtectedRoute>,
   },
 ]);
 

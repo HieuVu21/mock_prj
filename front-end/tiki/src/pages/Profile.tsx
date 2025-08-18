@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getNames } from 'country-list';
 import { 
   FiUser, FiBell, FiPackage, FiRefreshCw, FiCreditCard, FiMapPin, FiHeart, FiEye, FiAward, FiGift, FiShield, 
@@ -9,8 +9,9 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import Header from '../component/Header';
 import Footer from '../component/Footer';
-import { updateUser, getCurrentUser } from '../services/api';
+import { updateUser, getCurrentUser, getOrders } from '../services/api';
 import type { User } from '../interface/user.interface';
+import type { Order } from '../interface/order.interface';
 
 // Interface for the decoded token payload
 interface DecodedToken {
@@ -22,11 +23,80 @@ interface DecodedToken {
   exp: number;
 }
 
+const statusLabels: Record<Order['status'], string> = {
+  pending: 'Chờ thanh toán',
+  confirmed: 'Đang xử lý',
+  shipping: 'Đang vận chuyển',
+  delivered: 'Giao hàng thành công',
+  cancelled: 'Đã hủy',
+};
+
+const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN').format(n) + ' đ';
+
+// Demo orders fallback when API has no data
+const FAKE_ORDERS: Order[] = [
+  {
+    id: 'DH10001',
+    userId: '1',
+    customerName: 'Tiếp Nguyễn',
+    items: [
+      {
+        book: { name: 'Gel nghệ Nano siêu hấp thu Decumar New (20g)', book_cover: '/anh/1.png', original_price: 75000, manufacturer: 'CVI Pharma' },
+        quantity: 1,
+      },
+    ],
+    totalPrice: 93000,
+    status: 'delivered',
+    shippingAddress: 'Hà Nội',
+    paymentMethod: 'cod',
+    createdAt: '2025-05-01T10:00:00Z',
+  },
+  {
+    id: 'DH10002',
+    userId: '1',
+    customerName: 'Nam doãn',
+    items: [
+      {
+        book: { name: 'Sữa Rửa Mặt Tinh Chất Nghệ E100 (50g)', book_cover: '/anh/2.png', original_price: 27000, manufacturer: 'LOTTE MART' },
+        quantity: 1,
+      },
+    ],
+    totalPrice: 27000,
+    status: 'cancelled',
+    shippingAddress: 'Hà Nội',
+    paymentMethod: 'cod',
+    createdAt: '2025-04-22T08:30:00Z',
+  },
+  {
+    id: 'DH10003',
+    userId: '1',
+    customerName: 'Tiếp Nguyễn',
+    items: [
+      {
+        book: { name: 'Cẩm Nang Cấu Trúc Tiếng Anh', book_cover: '/anh/3.png', original_price: 72498, manufacturer: 'trungthanh2018' },
+        quantity: 1,
+      },
+    ],
+    totalPrice: 72498,
+    status: 'delivered',
+    shippingAddress: 'Hà Nội',
+    paymentMethod: 'vnpay',
+    createdAt: '2025-04-20T10:00:00Z',
+  },
+];
+
 const Profile = () => {
   const [selectedTab, setSelectedTab] = useState('profile');
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  // Orders state
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [orderStatus, setOrderStatus] = useState<'all' | Order['status']>('all');
+  const [orderSearch, setOrderSearch] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -63,9 +133,9 @@ const Profile = () => {
           const dateParts = userProfile.birthDay.split('-');
           if (dateParts.length === 3) {
             birthDateParts = {
-              year: dateParts[0],
-              month: dateParts[1],
-              day: dateParts[2]
+              year: dateParts[0] || '',
+              month: dateParts[1] || '',
+              day: dateParts[2] || ''
             };
           }
         }
@@ -91,6 +161,41 @@ const Profile = () => {
 
     loadUserProfile();
   }, []);
+
+  useEffect(() => {
+    // Sync tab from URL
+    if (location.pathname === '/profile/order') {
+      setSelectedTab('orders');
+    } else if (location.pathname === '/profile') {
+      setSelectedTab('profile');
+    }
+  }, [location.pathname]);
+
+  // Load orders when switching to orders tab
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (selectedTab !== 'orders') return;
+      setIsLoadingOrders(true);
+      try {
+        if (!user?.id) {
+          setOrders(FAKE_ORDERS);
+          return;
+        }
+        const { data } = await getOrders({ userId: user.id, _sort: 'createdAt', _order: 'desc' });
+        if (Array.isArray(data) && data.length > 0) {
+          setOrders(data);
+        } else {
+          setOrders(FAKE_ORDERS);
+        }
+      } catch (error) {
+        setOrders(FAKE_ORDERS);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    loadOrders();
+  }, [selectedTab, user?.id]);
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -173,6 +278,16 @@ const Profile = () => {
     { icon: <FiGift className="text-xl" />, text: 'Mã giảm giá', value: 'vouchers' },
   ];
 
+  const filteredOrders = orders
+    .filter(o => (orderStatus === 'all' ? true : o.status === orderStatus))
+    .filter(o => {
+      if (!orderSearch.trim()) return true;
+      const keyword = orderSearch.toLowerCase();
+      const inId = String(o.id).toLowerCase().includes(keyword);
+      const inItems = o.items?.some(i => (i.book?.name || '').toLowerCase().includes(keyword));
+      return inId || inItems;
+    });
+
   if (isLoadingProfile) {
     return (
       <>
@@ -217,7 +332,11 @@ const Profile = () => {
                   className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
                     selectedTab === link.value ? 'text-[#0d5cb6] bg-gray-100' : 'text-gray-600'
                   }`}
-                  onClick={() => setSelectedTab(link.value)}
+                  onClick={() => {
+                    setSelectedTab(link.value);
+                    if (link.value === 'orders') navigate('/profile/order');
+                    if (link.value === 'profile') navigate('/profile');
+                  }}
                 >
                   {link.icon}
                   <span className="text-sm">{link.text}</span>
@@ -274,7 +393,9 @@ const Profile = () => {
                           className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
                         >
                           <option value="">Ngày</option>
-                          {days.map(d => <option key={d} value={d}>{d}</option>)}
+                          {days.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
                         </select>
                         <select 
                           name="month" 
@@ -283,7 +404,9 @@ const Profile = () => {
                           className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
                         >
                           <option value="">Tháng</option>
-                          {months.map(m => <option key={m} value={m}>{m}</option>)}
+                          {months.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
                         </select>
                         <select 
                           name="year" 
@@ -292,7 +415,9 @@ const Profile = () => {
                           className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
                         >
                           <option value="">Năm</option>
-                          {years.map(y => <option key={y} value={y}>{y}</option>)}
+                          {years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -418,6 +543,124 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {selectedTab === 'orders' && (
+            <div className="flex-1 bg-white rounded-lg p-6 shadow-sm">
+              <h1 className="text-xl font-semibold mb-4">Đơn hàng của tôi</h1>
+
+              {/* Tabs */}
+              <div className="flex gap-4 mb-4">
+                {[
+                  { key: 'all', label: 'Tất cả đơn' },
+                  { key: 'pending', label: 'Chờ thanh toán' },
+                  { key: 'confirmed', label: 'Đang xử lý' },
+                  { key: 'shipping', label: 'Đang vận chuyển' },
+                  { key: 'delivered', label: 'Đã giao' },
+                  { key: 'cancelled', label: 'Đã hủy' },
+                ].map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => {
+                      if (selectedTab !== 'orders') navigate('/profile/order');
+                      setOrderStatus(t.key as any);
+                    }}
+                    className={`px-3 py-2 text-sm border-b-2 -mb-[2px] ${orderStatus === (t.key as any) ? 'border-[#0d5cb6] text-[#0d5cb6] font-semibold' : 'border-transparent text-gray-600'}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div className="mb-4">
+                <div className="flex items-center border border-gray-300 rounded w-full overflow-hidden">
+                  <input
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    className="flex-1 px-3 py-2 outline-none"
+                    placeholder="Tìm đơn theo Mã đơn hàng, Nhà bán hoặc Tên sản phẩm"
+                  />
+                  <span className="text-gray-400 px-2">|</span>
+                  <button
+                    onClick={() => setOrderSearch(orderSearch.trim())}
+                    className="px-3 py-2 text-[#0d5cb6] text-sm hover:bg-blue-50"
+                  >
+                    Tìm đơn hàng
+                  </button>
+                </div>
+              </div>
+
+              {/* List */}
+              {isLoadingOrders ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0d5cb6] mx-auto mb-4"></div>
+                    <p>Đang tải danh sách đơn hàng...</p>
+                  </div>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <img src="/emptycart.png" alt="empty" className="w-32 mx-auto mb-3" />
+                  <p>Không có đơn hàng phù hợp</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredOrders.map((order) => (
+                    <div key={order.id} className="border border-gray-300 rounded-lg overflow-hidden">
+                      <div className="px-4 py-2 bg-gray-50 text-sm text-gray-600 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                        <span className="font-medium">{statusLabels[order.status]}</span>
+                        <span className="text-gray-400">•</span>
+                        <span>Mã đơn: {order.id}</span>
+                      </div>
+
+                      <div className="p-4">
+                        {/* First item preview */}
+                        {order.items?.slice(0, 1).map((item, idx) => (
+                          <div key={idx} className="flex items-start gap-4">
+                            <div className="relative">
+                              <img
+                                className="w-16 h-16 object-contain rounded border border-gray-300"
+                                src={item.book?.images?.[0]?.thumbnail_url || item.book?.book_cover || '/emptycart.png'}
+                                alt={item.book?.name || 'Book'}
+                              />
+                              <span className="absolute -bottom-0 right-0 text-xs px-1 rounded bg-gray-100 border border-gray-300" style={{color: '#0d5cb6'}}>x{item.quantity}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm line-clamp-2 mb-1">{item.book?.name}</div>
+                              <div className="text-gray-500 text-xs">{item.book?.manufacturer}</div>
+                            </div>
+                            <div className="text-right text-lg text-gray-700 min-w-[120px]">
+                              {formatCurrency(item.book?.original_price || 0)}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* If more items */}
+                        {order.items?.length > 1 && (
+                          <div className="text-xs text-gray-500 mt-2">+{order.items.length - 1} sản phẩm khác</div>
+                        )}
+
+                        <div className="flex items-center justify-between mt-4">
+                          <div></div>
+                          <div className="flex items-center gap-3 flex-col">
+                            <div className="flex items-center gap-3">
+                            <div className="text-lg " style={{color: '#808089'}}>Tổng tiền:</div>
+                            <div className="text-[#0d5cb6] text-xl font-semibold">{formatCurrency(order.totalPrice)}</div>
+                            </div>
+                              <div className="flex items-center gap-3">
+                            <button className="ml-4 text-sm px-4 py-1.5 border rounded text-blue-600 border-blue-600 hover:bg-blue-50">Mua lại</button>
+                            <Link to={`/orders/${order.id}`} state={{ order }} className="text-sm px-4 py-1.5 border rounded hover:bg-gray-50">Xem chi tiết</Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
