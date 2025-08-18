@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import CartPage from "./pages/CartPage";
 import ProtectedRoute from "./component/ProtectedRoute";
 import { CartProvider } from "./contexts/CartContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const router = createBrowserRouter([
   {
@@ -36,10 +37,12 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <CartProvider>
-      <RouterProvider router={router} />
-      <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <RouterProvider router={router} />
+        <Toaster position="bottom-right" toastOptions={{ duration: 2500 }} />
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

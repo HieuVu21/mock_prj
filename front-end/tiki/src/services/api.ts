@@ -87,6 +87,11 @@ export async function deleteCategory(id: number) {
 export async function getUsers() {
   return api<User[]>(`/users`);
 }
+
+export async function getCurrentUser() {
+  return api<User>(`/users/me`);
+}
+
 export async function createUser(body: Partial<User>) {
   // json-server không yêu cầu token để tạo user, nhưng ta vẫn truyền để đồng bộ
   // API thực tế sẽ cần endpoint /register hoặc tương tự

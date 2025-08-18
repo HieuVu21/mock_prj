@@ -6,38 +6,90 @@ import {
   FiPhone, FiMail, FiLock, FiTrash2 
 } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
 import Header from '../component/Header';
 import Footer from '../component/Footer';
+import { updateUser, getCurrentUser } from '../services/api';
+import type { User } from '../interface/user.interface';
 
 // Interface for the decoded token payload
 interface DecodedToken {
-  id: number;
+  sub: string;
   email: string;
-  username: string;
-  phone: string;
+  username?: string;
+  phone?: string;
   iat: number;
+  exp: number;
 }
 
 const Profile = () => {
   const [selectedTab, setSelectedTab] = useState('profile');
-  const [selectedCountry, setSelectedCountry] = useState('');
-  const [user, setUser] = useState<DecodedToken | null>(null);
-  const [username, setUsername] = useState('');
-  const [birthDate, setBirthDate] = useState({ day: '', month: '', year: '' });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    fullName: '',
+    nickName: '',
+    birthDate: { day: '', month: '', year: '' },
+    gender: '',
+    nationality: '',
+    phone: '',
+    email: ''
+  });
+
   const countries = getNames().sort();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken: DecodedToken = jwtDecode(token);
-        setUser(decodedToken);
-        setUsername(decodedToken.username || '');
-      } catch (error) {
-        console.error("Failed to decode token:", error);
-        // Handle invalid token, e.g., by logging out the user
+    const loadUserProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Vui lòng đăng nhập");
+        return;
       }
-    }
+
+      try {
+        // Decode token to get basic info
+        const decodedToken: DecodedToken = jwtDecode(token);
+        
+        // Fetch full user profile from API
+        const { data: userProfile } = await getCurrentUser();
+        setUser(userProfile);
+        
+        // Parse birth date if exists
+        let birthDateParts = { day: '', month: '', year: '' };
+        if (userProfile.birthDay) {
+          const dateParts = userProfile.birthDay.split('-');
+          if (dateParts.length === 3) {
+            birthDateParts = {
+              year: dateParts[0],
+              month: dateParts[1],
+              day: dateParts[2]
+            };
+          }
+        }
+        
+        // Initialize form data with user information
+        setFormData({
+          fullName: userProfile.fullName || userProfile.name || '',
+          nickName: userProfile.nickName || '',
+          birthDate: birthDateParts,
+          gender: userProfile.gender || '',
+          nationality: userProfile.nationality || '',
+          phone: userProfile.phone || '',
+          email: userProfile.email || ''
+        });
+        
+      } catch (error: any) {
+        console.error("Failed to load user profile:", error);
+        toast.error("Không thể tải thông tin người dùng");
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserProfile();
   }, []);
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -45,9 +97,67 @@ const Profile = () => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setBirthDate(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      birthDate: {
+        ...prev.birthDate,
+        [name]: value
+      }
+    }));
+  };
+
+  const handleGenderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      gender: e.target.value
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) {
+      toast.error("Không tìm thấy thông tin người dùng");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Format birth date
+      const birthDay = formData.birthDate.day && formData.birthDate.month && formData.birthDate.year
+        ? `${formData.birthDate.year}-${formData.birthDate.month.padStart(2, '0')}-${formData.birthDate.day.padStart(2, '0')}`
+        : '';
+
+      const updateData = {
+        fullName: formData.fullName,
+        nickName: formData.nickName,
+        birthDay,
+        gender: formData.gender,
+        nationality: formData.nationality,
+        phone: formData.phone,
+        address: user.address || '' // Keep existing address
+      };
+
+      const { data: updatedUser } = await updateUser(user.id, updateData);
+      toast.success("Cập nhật thông tin thành công!");
+      
+      // Update local user state
+      setUser(updatedUser);
+
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Có lỗi xảy ra khi cập nhật thông tin");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sidebarLinks = [
@@ -62,6 +172,23 @@ const Profile = () => {
     { icon: <FiAward className="text-xl" />, text: 'Nhận xét của tôi', value: 'reviews' },
     { icon: <FiGift className="text-xl" />, text: 'Mã giảm giá', value: 'vouchers' },
   ];
+
+  if (isLoadingProfile) {
+    return (
+      <>
+        <Header />
+        <div className="container mx-auto px-4 py-6 mb-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0d5cb6] mx-auto mb-4"></div>
+              <p>Đang tải thông tin người dùng...</p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -78,7 +205,9 @@ const Profile = () => {
             <div className="flex items-center gap-4 mb-6">
               <img src="/tiki-icon.png" alt="Avatar" className="w-12 h-12 rounded-full" />
               <div>
-                <div className="font-semibold text-lg">{user?.username || 'Tài khoản'}</div>
+                <div className="font-semibold text-lg">
+                  {user?.fullName || user?.name || 'Tài khoản'}
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -118,31 +247,50 @@ const Profile = () => {
                       <label className="block text-gray-600 mb-1">Họ & Tên</label>
                       <input
                         type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full p-2 border rounded outline-none"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border rounded outline-none focus:border-[#0d5cb6]"
                       />
                     </div>
                     <div>
                       <label className="block text-gray-600 mb-1">Nickname</label>
                       <input
                         type="text"
+                        name="nickName"
+                        value={formData.nickName}
+                        onChange={handleInputChange}
                         placeholder="Thêm nickname"
-                        className="w-full p-2 border rounded outline-none"
+                        className="w-full p-2 border rounded outline-none focus:border-[#0d5cb6]"
                       />
                     </div>
                     <div>
                       <label className="block text-gray-600 mb-1">Ngày sinh</label>
                       <div className="grid grid-cols-3 gap-2">
-                        <select name="day" value={birthDate.day} onChange={handleDateChange} className="p-2 border rounded outline-none">
+                        <select 
+                          name="day" 
+                          value={formData.birthDate.day} 
+                          onChange={handleDateChange} 
+                          className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
+                        >
                           <option value="">Ngày</option>
                           {days.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
-                        <select name="month" value={birthDate.month} onChange={handleDateChange} className="p-2 border rounded outline-none">
+                        <select 
+                          name="month" 
+                          value={formData.birthDate.month} 
+                          onChange={handleDateChange} 
+                          className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
+                        >
                           <option value="">Tháng</option>
                           {months.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
-                        <select name="year" value={birthDate.year} onChange={handleDateChange} className="p-2 border rounded outline-none">
+                        <select 
+                          name="year" 
+                          value={formData.birthDate.year} 
+                          onChange={handleDateChange} 
+                          className="p-2 border rounded outline-none focus:border-[#0d5cb6]"
+                        >
                           <option value="">Năm</option>
                           {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
@@ -152,15 +300,33 @@ const Profile = () => {
                       <label className="block text-gray-600 mb-1">Giới tính</label>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2">
-                          <input type="radio" name="gender" value="male" />
+                          <input 
+                            type="radio" 
+                            name="gender" 
+                            value="male" 
+                            checked={formData.gender === 'male'}
+                            onChange={handleGenderChange}
+                          />
                           <span>Nam</span>
                         </label>
                         <label className="flex items-center gap-2">
-                          <input type="radio" name="gender" value="female" />
+                          <input 
+                            type="radio" 
+                            name="gender" 
+                            value="female" 
+                            checked={formData.gender === 'female'}
+                            onChange={handleGenderChange}
+                          />
                           <span>Nữ</span>
                         </label>
                         <label className="flex items-center gap-2">
-                          <input type="radio" name="gender" value="other" />
+                          <input 
+                            type="radio" 
+                            name="gender" 
+                            value="other" 
+                            checked={formData.gender === 'other'}
+                            onChange={handleGenderChange}
+                          />
                           <span>Khác</span>
                         </label>
                       </div>
@@ -168,9 +334,10 @@ const Profile = () => {
                     <div>
                       <label className="block text-gray-600 mb-1">Quốc tịch</label>
                       <select 
-                        className="w-full p-2 border rounded outline-none"
-                        value={selectedCountry}
-                        onChange={(e) => setSelectedCountry(e.target.value)}
+                        name="nationality"
+                        className="w-full p-2 border rounded outline-none focus:border-[#0d5cb6]"
+                        value={formData.nationality}
+                        onChange={handleInputChange}
                       >
                         <option value="">Chọn quốc tịch</option>
                         {countries.map((country) => (
@@ -180,8 +347,12 @@ const Profile = () => {
                         ))}
                       </select>
                     </div>
-                    <button className="bg-[#0d5cb6] text-white px-6 py-2 rounded">
-                      Lưu thay đổi
+                    <button 
+                      onClick={handleSaveProfile}
+                      disabled={isLoading}
+                      className="bg-[#0d5cb6] text-white px-6 py-2 rounded hover:bg-[#0a4d9a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </button>
                   </div>
                 </div>
@@ -195,7 +366,7 @@ const Profile = () => {
                         <FiPhone className="text-gray-400 text-xl"/>
                         <div>
                           <div>Số điện thoại</div>
-                          <div className="text-gray-500">{user?.phone || 'Chưa cập nhật'}</div>
+                          <div className="text-gray-500">{formData.phone || 'Chưa cập nhật'}</div>
                         </div>
                       </div>
                       <button className="text-blue-600 font-semibold text-sm border border-blue-600 rounded px-4 py-1.5 hover:bg-blue-50">Cập nhật</button>
@@ -205,7 +376,7 @@ const Profile = () => {
                         <FiMail className="text-gray-400 text-xl"/>
                         <div>
                           <div>Địa chỉ email</div>
-                          <div className="text-gray-500">{user?.email || 'Chưa cập nhật'}</div>
+                          <div className="text-gray-500">{formData.email || 'Chưa cập nhật'}</div>
                         </div>
                       </div>
                       <button className="text-blue-600 font-semibold text-sm border border-blue-600 rounded px-4 py-1.5 hover:bg-blue-50">Cập nhật</button>

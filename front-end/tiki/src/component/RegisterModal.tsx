@@ -50,7 +50,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
         body: JSON.stringify({
           email,
           password,
-          username,
+          name: username, // Backend expects 'name' field
           role: 'user' // Mặc định role là user
         })
       });
@@ -62,12 +62,19 @@ const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: {
 
       const data = await res.json();
       
+      // Lưu token vào localStorage
+      if (data.accessToken) {
+        localStorage.setItem('token', data.accessToken);
+      }
+      
       // Đăng ký thành công
       toast.success('Đăng ký thành công');
       onClose();
-      navigate('/');
+      
+      // Reload trang để cập nhật trạng thái đăng nhập
+      window.location.reload();
     } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra');
+      setError(err.message || 'Có l��i xảy ra');
     } finally {
       setLoading(false);
     }

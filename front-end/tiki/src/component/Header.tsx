@@ -3,6 +3,7 @@ import { BsSearch } from 'react-icons/bs';
 import { FaRegFaceGrinWink } from "react-icons/fa6";
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import type { Books } from '../interface/book.interface';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
@@ -21,7 +22,8 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   // const baseURL = 'https://be-mock-project.vercel.app';
   //  // Base URL for API requests
-  const baseURL = 'https:localhost'; // Base URL for API requests
+  const baseURL = 'http://localhost:3000'; // Base URL for API requests
+
 
   const navigate = useNavigate();
   const { cartItems } = useCart();
@@ -45,7 +47,11 @@ const Header = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
     setShowDropdown(false);
+    toast.success('Đã đăng xuất thành công');
     navigate('/'); // Chuyển hướng về trang chủ
+    
+    // Trigger auth change event để các component khác cập nhật
+    window.dispatchEvent(new Event('auth-change'));
   };
 
   // Handle click outside dropdown

@@ -12,7 +12,9 @@ const SearchSuggestion = ({ query, onSelect, onClose }: SearchSuggestionProps) =
   const [suggestions, setSuggestions] = useState<Books[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
+  // const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
+  const baseURL = 'http://localhost:3000'; // Base URL for API requests
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

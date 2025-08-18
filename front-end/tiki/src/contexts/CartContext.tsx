@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { type Books, type CartItem } from '../interface/book.interface';
 import { getCart, addToCart as addToCartApi, updateCartItem, deleteCartItem } from '../services/api';
 
@@ -99,12 +99,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (itemInCart && itemInCart.cartItemId) {
         console.log('Updating existing item with cartItemId:', itemInCart.cartItemId);
         await updateCartItem(itemInCart.cartItemId, itemInCart.quantity + quantity);
+        toast.success(`Đã cập nhật số lượng sản phẩm trong giỏ hàng`);
       } else {
         console.log('Adding new item to cart');
         await addToCartApi({ bookId: book.id, quantity });
+        toast.success(`Đã thêm sản phẩm vào giỏ hàng`);
       }
       
-      toast.success('Đã thêm vào giỏ hàng');
       await fetchCart();
     } catch (error) {
       console.error('Failed to add to cart:', error);
@@ -121,6 +122,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       await updateCartItem(cartItemId, quantity);
       await fetchCart();
+      toast.success('Đã cập nhật số lượng sản phẩm');
     } catch (error) {
       console.error('Failed to update cart item:', error);
       console.error('CartItemId used:', cartItemId);

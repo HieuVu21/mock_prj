@@ -12,7 +12,9 @@ const SearchResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [screenSize, setScreenSize] = useState(window.innerWidth);
-  const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
+  // const baseURL = 'https://be-mock-project.vercel.app'; // Base URL for API requests
+  const baseURL = 'http://localhost:3000'; // Base URL for API requests
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const SearchResults = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fff', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
       <Header />
       <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
         <h1 className="text-2xl font-bold text-gray-900 mb-6 mt-6">
