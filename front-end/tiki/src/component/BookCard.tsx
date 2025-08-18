@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import type { Books } from "../interface/book.interface";
-import DescriptionComponent from "./descriptionComponent";
+import DescriptionComponent from "./DescriptionComponent";
 
 const BookDetailComponent = () => {
   const { id } = useParams();

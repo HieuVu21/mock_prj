@@ -33,7 +33,7 @@ const HomeComponent = () => {
 
   // Filter and sort books
   const filteredAndSortedBooks = useMemo(() => {
-    let filtered = books.filter(book => {
+    const filtered = books.filter(book => {
       const matchesSearch = searchTerm === '' || 
         book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (book.short_description && book.short_description.toLowerCase().includes(searchTerm.toLowerCase())) ||
