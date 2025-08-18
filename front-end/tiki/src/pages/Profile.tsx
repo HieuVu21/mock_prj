@@ -9,7 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import Header from '../component/Header';
 import Footer from '../component/Footer';
-import { updateUser, getCurrentUser, getOrders } from '../services/api';
+import { updateUser, getCurrentUser, getOrders, updateOrderStatus } from '../services/api';
 import type { User } from '../interface/user.interface';
 import type { Order } from '../interface/order.interface';
 
@@ -262,6 +262,26 @@ const Profile = () => {
       toast.error(error.message || "Có lỗi xảy ra khi cập nhật thông tin");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleChangeStatus = async (orderId: string | number, next: Order['status']) => {
+    try {
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: next } : o)));
+      await updateOrderStatus(orderId, next);
+      toast.success('Cập nhật trạng thái thành công');
+    } catch (err: any) {
+      toast.error('Cập nhật thất bại trên server (đang dùng dữ liệu demo)');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string | number) => {
+    try {
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: 'cancelled' } : o)));
+      await updateOrderStatus(orderId, 'cancelled');
+      toast.success('Hủy đơn hàng thành công');
+    } catch (err: any) {
+      toast.error('Hủy đơn hàng thất bại (đang dùng dữ liệu demo)');
     }
   };
 
@@ -650,9 +670,17 @@ const Profile = () => {
                             <div className="text-lg " style={{color: '#808089'}}>Tổng tiền:</div>
                             <div className="text-[#0d5cb6] text-xl font-semibold">{formatCurrency(order.totalPrice)}</div>
                             </div>
-                              <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
                             <button className="ml-4 text-sm px-4 py-1.5 border rounded text-blue-600 border-blue-600 hover:bg-blue-50">Mua lại</button>
                             <Link to={`/orders/${order.id}`} state={{ order }} className="text-sm px-4 py-1.5 border rounded hover:bg-gray-50">Xem chi tiết</Link>
+                            {order.status === 'confirmed' && (
+                              <button 
+                                onClick={() => handleCancelOrder(order.id)}
+                                className="text-sm px-4 py-1.5 border border-red-600 rounded text-red-600 hover:bg-red-50"
+                              >
+                                Hủy đơn
+                              </button>
+                            )}
                             </div>
                           </div>
                         </div>

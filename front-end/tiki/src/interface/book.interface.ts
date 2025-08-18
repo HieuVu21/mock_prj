@@ -65,6 +65,8 @@ export interface Books {
   // Nested publisher information might be in specifications
   publisher_vn?: string;
   manufacturer?: string;
+  // SKU field for order details
+  sku?: string;
 }
 export interface ProductApiResponse {
   docs: Books[];

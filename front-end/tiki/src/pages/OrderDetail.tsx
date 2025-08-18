@@ -17,30 +17,58 @@ const statusLabel: Record<Order['status'], string> = {
 
 const FAKE_ORDERS: Order[] = [
   {
-    id: 'DH10001',
+    id: '619720335',
     userId: '1',
-    customerName: 'TIẾP NGUYỄN',
+    customerName: 'Test Nguyễn',
     items: [
-      { book: { name: 'Gel nghệ Nano siêu hấp thu Decumar New (20g) - Ngừa mụn, Giảm thâm sẹo, Kiểm soát nhờn', book_cover: '/anh/1.png', original_price: 75000, manufacturer: 'CVI Pharma' }, quantity: 1 },
+      { 
+        book: { 
+          name: 'Gel nghệ Nano siêu hấp thu Decumar New (20g) - Ngừa mụn, Giảm thâm sẹo, Kiểm soát nhờn', 
+          book_cover: '/anh/1.png', 
+          original_price: 75000, 
+          manufacturer: 'CVI Pharma',
+          sku: '7821800990147'
+        }, 
+        quantity: 1 
+      },
     ],
     totalPrice: 93000,
     status: 'delivered',
-    shippingAddress: 'Phố lỗ, Xã Nguyệt Đức, Huyện Yên Lạc, Vĩnh Phúc, Việt Nam',
+    shippingAddress: 'Vĩnh Phúc, Việt Nam',
     paymentMethod: 'cod',
     createdAt: '2019-12-28T13:30:00Z',
+    shippingFee: 18000,
+    deliveryMethod: 'FAST Giao Tiết Kiệm',
+    estimatedDelivery: 'Thứ năm, 02/01',
+    carrier: 'TikiNOW Smart Logistics (giao từ Hà Nội)',
+    notificationTime: '2019-12-29T00:59:00Z'
   },
   {
     id: 'DH10002',
     userId: '1',
     customerName: 'Nam doãn',
     items: [
-      { book: { name: 'Sữa Rửa Mặt Tinh Chất Nghệ E100 (50g)', book_cover: '/anh/2.png', original_price: 27000, manufacturer: 'LOTTE MART' }, quantity: 1 },
+      { 
+        book: { 
+          name: 'Sữa Rửa Mặt Tinh Chất Nghệ E100 (50g)', 
+          book_cover: '/anh/2.png', 
+          original_price: 27000, 
+          manufacturer: 'LOTTE MART',
+          sku: '123456789'
+        }, 
+        quantity: 1 
+      },
     ],
     totalPrice: 27000,
     status: 'cancelled',
     shippingAddress: 'Hà Nội',
     paymentMethod: 'cod',
     createdAt: '2019-12-20T10:00:00Z',
+    shippingFee: 0,
+    deliveryMethod: 'Giao tiêu chuẩn',
+    estimatedDelivery: 'Thứ hai, 23/12',
+    carrier: 'TikiNOW Smart Logistics',
+    notificationTime: '2019-12-20T11:00:00Z'
   },
 ];
 
@@ -100,11 +128,18 @@ const OrderDetail: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="border rounded p-4 border-gray-300">
+              <div className="border rounded p-4">
                 <div className="font-medium mb-2">Thông báo</div>
-                <div className="text-sm text-gray-600">Chúng tôi vừa bàn giao đơn hàng của quý khách đến đối tác vận chuyển. Dự kiến giao hàng trong 1-3 ngày làm việc.</div>
+                <div className="text-sm text-gray-600">
+                  {order.notificationTime && (
+                    <div className="text-xs text-gray-500 mb-1">
+                      {new Date(order.notificationTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit' })} {new Date(order.notificationTime).toLocaleDateString('vi-VN')}
+                    </div>
+                  )}
+                  Chúng tôi vừa bàn giao đơn hàng của quý khách đến đối tác vận chuyển NinjaVan. Dự kiến giao hàng vào Thứ hai, 30/12/2019 → Thứ ba, 31/12/2019.
+                </div>
               </div>
-              <div className="border rounded p-4 border-gray-300">
+              <div className="border rounded p-4">
                 <div className="font-medium mb-2">Địa chỉ người nhận</div>
                 <div className="text-sm">
                   <div className="font-semibold">{order.customerName || 'Khách hàng'}</div>
@@ -112,13 +147,23 @@ const OrderDetail: React.FC = () => {
                   <div className="text-gray-600">Điện thoại: 0988130768</div>
                 </div>
               </div>
-              <div className="border rounded p-4 border-gray-300">
+              <div className="border rounded p-4">
                 <div className="font-medium mb-2">Hình thức thanh toán</div>
-                <div className="text-sm text-gray-600">{order.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Thanh toán điện tử'}</div>
+                <div className="text-sm text-gray-600">{order.paymentMethod === 'cod' ? 'Thanh toán tiền mặt khi nhận hàng' : 'Thanh toán điện tử'}</div>
               </div>
             </div>
 
-            <div className="border rounded overflow-hidden border-gray-300">
+            <div className="border rounded p-4 mb-4">
+              <div className="font-medium mb-2">Hình thức giao hàng</div>
+              <div className="text-sm">
+                <div className="font-semibold">{order.deliveryMethod || 'Giao tiêu chuẩn'}</div>
+                <div className="text-gray-600">Giao vào {order.estimatedDelivery || '1-3 ngày làm việc'}</div>
+                <div className="text-gray-600">Được giao bởi {order.carrier || 'TikiNOW Smart Logistics'}</div>
+                <div className="text-gray-600">Phí vận chuyển: {formatCurrency(order.shippingFee || 0)}</div>
+              </div>
+            </div>
+
+            <div className="border rounded overflow-hidden">
               <div className="grid grid-cols-12 bg-gray-50 text-gray-600 text-sm px-4 py-2">
                 <div className="col-span-6">Sản phẩm</div>
                 <div className="col-span-2 text-right">Giá</div>
@@ -126,12 +171,17 @@ const OrderDetail: React.FC = () => {
                 <div className="col-span-2 text-right">Tạm tính</div>
               </div>
               {order.items.map((it, idx) => (
-                <div key={idx} className="grid grid-cols-12 items-center px-4 py-3 border-t border-gray-300">
+                <div key={idx} className="grid grid-cols-12 items-start px-4 py-3 border-t">
                   <div className="col-span-6 flex items-start gap-3">
-                    <img src={it.book?.book_cover || '/emptycart.png'} alt="img" className="w-12 h-12 object-contain rounded border border-gray-300" />
+                    <img src={it.book?.book_cover || '/emptycart.png'} alt="img" className="w-12 h-12 object-contain rounded border" />
                     <div>
                       <div className="text-sm mb-1">{it.book?.name}</div>
                       <div className="text-xs text-gray-500">Cung cấp bởi {it.book?.manufacturer || 'Nhà bán'}</div>
+                      {it.book?.sku && <div className="text-xs text-gray-500">Sku: {it.book.sku}</div>}
+                      <div className="flex gap-2 mt-2">
+                        <button className="text-xs px-2 py-1 border border-blue-600 rounded text-blue-600 hover:bg-blue-50">Viết nhận xét</button>
+                        <button className="text-xs px-2 py-1 border border-blue-600 rounded text-blue-600 hover:bg-blue-50">Mua lại</button>
+                      </div>
                     </div>
                   </div>
                   <div className="col-span-2 text-right text-sm">{formatCurrency(it.book?.original_price || 0)}</div>
@@ -145,8 +195,8 @@ const OrderDetail: React.FC = () => {
               <div className="w-full md:w-1/2 lg:w-1/3">
                 <div className="flex justify-between text-sm py-1"><span>Tạm tính</span><span>{formatCurrency(order.items.reduce((s, it) => s + (it.book?.original_price || 0) * it.quantity, 0))}</span></div>
                 <div className="flex justify-between text-sm py-1"><span>Phí vận chuyển</span><span>0 đ</span></div>
-                <div className="border-t my-2 border-gray-300"></div>
-                <div className="flex justify-between text-lg font-semibold text-[#d70018] "><span>Tổng cộng</span><span>{formatCurrency(order.totalPrice)}</span></div>
+                <div className="border-t my-2"></div>
+                <div className="flex justify-between text-lg font-semibold text-[#d70018]"><span>Tổng cộng</span><span>{formatCurrency(order.totalPrice)}</span></div>
               </div>
             </div>
 
@@ -156,6 +206,16 @@ const OrderDetail: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3">
+        <button className="w-12 h-12 bg-[#0d5cb6] text-white rounded-full shadow-lg hover:bg-[#0a4d9a] transition-colors flex items-center justify-center">
+          <span className="text-xs">🎯</span>
+        </button>
+        <button className="w-12 h-12 bg-[#0d5cb6] text-white rounded-full shadow-lg hover:bg-[#0a4d9a] transition-colors flex items-center justify-center">
+          <span className="text-xs">💬</span>
+        </button>
       </div>
       <Footer />
     </>

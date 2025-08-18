@@ -18,4 +18,10 @@ export interface Order {
   paymentMethod: string;
   createdAt?: string;
   updatedAt?: string;
+  // Additional fields for detailed order view
+  notificationTime?: string;
+  deliveryMethod?: string;
+  estimatedDelivery?: string;
+  carrier?: string;
+  shippingFee?: number;
 }
