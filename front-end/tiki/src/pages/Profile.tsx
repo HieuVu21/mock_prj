@@ -140,10 +140,16 @@ const Profile = () => {
         fullName: formData.fullName,
         nickName: formData.nickName,
         birthDay,
+        // Lưu cả birthDate để giữ ngày/tháng/năm riêng biệt
+        birthDate: formData.birthDate,
         gender: formData.gender,
         nationality: formData.nationality,
         phone: formData.phone,
-        address: user.address || '' // Keep existing address
+        address: user.address || '', // Keep existing address
+        // Giữ nguyên email và password để không làm mất credentials
+        email: user.email,
+        password: user.password,
+        role: user.role
       };
 
       const { data: updatedUser } = await updateUser(user.id, updateData);

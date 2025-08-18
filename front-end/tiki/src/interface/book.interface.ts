@@ -17,7 +17,8 @@ export interface Books {
   description: string;
   short_description: string | null;
   rating_average: number;
-  quantity_sold: {
+  stock_quantity?: number;
+  quantity_sold?: {
     text: string;
     value: number;
   };
@@ -26,11 +27,7 @@ export interface Books {
     name: string;
     slug: string;
   }>;
-  categories: {
-    id: number;
-    name: string;
-    is_leaf: boolean;
-  };
+  categories: Category,
   current_seller: {
     id: number;
     sku: string;

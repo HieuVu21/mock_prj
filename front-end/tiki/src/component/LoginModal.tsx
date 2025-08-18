@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: { 
   isOpen: boolean; 
@@ -9,6 +10,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
   onLoginSuccess: () => void;
 }) => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +25,6 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
       setError('');
     }
   }, [isOpen]);
-  // const baseUrl = 'https://be-mock-project.vercel.app'; // Sửa lại cho đúng endpoint local json-server
-  const baseUrl = 'http://localhost:3000'; // Base URL for API requests
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,62 +34,13 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onLoginSuccess }: {
     try {
       console.log('Attempting login with:', { email, password });
       
-      const res = await fetch(`${baseUrl}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error('Login error:', errorData);
-        throw new Error(errorData.message || 'Lỗi server');
-      }
-
-      const data = await res.json();
-      console.log('Login response data:', data);
+      // Sử dụng useAuth().login() để đảm bảo đồng bộ với AuthContext
+      await login(email, password);
       
-      const { user, accessToken } = data;
-
-      // Kiểm tra response structure
-      if (!accessToken) {
-        throw new Error('Không nhận được token từ server');
-      }
-
-      if (!user || !user.role) {
-        throw new Error('Thông tin người dùng không hợp lệ');
-      }
-
-      // 1. Lưu token vào localStorage TRƯỚC
-      localStorage.setItem('token', accessToken);
-      console.log('Token saved:', accessToken.substring(0, 20) + '...');
-
-      // 2. Đợi một chút để đảm bảo token đã được lưu
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // 3. Phát sự kiện auth-change
-      window.dispatchEvent(new CustomEvent('auth-change'));
-      console.log('Auth change event dispatched');
-
-      // 4. Các hành động UI
-      toast.success('Đăng nhập thành công');
+      // Login thành công, gọi callback
       onLoginSuccess();
-
-      // 5. Đợi thêm một chút trước khi navigate để đảm bảo cart được load
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       onClose();
       
-      if (user.role === 'user') {
-        navigate('/');
-      } else if (user.role === 'admin') {
-        navigate('/admin');
-      }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Có lỗi xảy ra');
