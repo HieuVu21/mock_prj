@@ -1,4 +1,4 @@
-import { Toaster } from "@/component/ui/toaster";
+import { Toaster } from "@/component/ui/toaster";  
 import { Toaster as Sonner } from "@/component/ui/sonner";
 import { TooltipProvider } from "@/component/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "@/component/common/ProtectedRoute";
 import { Toaster as HotToaster } from "react-hot-toast";
 
