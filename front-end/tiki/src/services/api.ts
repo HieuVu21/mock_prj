@@ -32,12 +32,15 @@ const buildQuery = (q?: Query) => {
   return `?${params.toString()}`;
 };
 async function api<T>(path: string, init?: RequestInit, token?: string): Promise<{ data: T; headers: Headers }>{
+  // Lấy token từ tham số truyền vào hoặc từ localStorage để đảm bảo các request kèm Authorization
+  const effectiveToken = token ?? (typeof window !== "undefined" ? localStorage.getItem("token") ?? undefined : undefined);
+
   const res = await fetch(API_URL + path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {}),
     },
   });
   if (!res.ok) {
