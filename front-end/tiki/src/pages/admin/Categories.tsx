@@ -13,9 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 
-// Import logic API và Auth
+// Import API, Auth và Interfaces
 import { createCategory, deleteCategory, getCategories, getProducts, updateCategory } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Books, Category } from "@/interface/book.interface";
@@ -23,7 +22,6 @@ import type { Books, Category } from "@/interface/book.interface";
 // Mở rộng interface Category để chứa thêm thông tin tính toán
 interface DisplayCategory extends Category {
   productCount: number;
-  description?: string; // Giả sử API có thể có hoặc không
 }
 
 export default function CategoryManagement() {
@@ -35,10 +33,8 @@ export default function CategoryManagement() {
   const [selectedCategory, setSelectedCategory] = useState<DisplayCategory | null>(null);
   const { token } = useAuth();
   
-  // Form state
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '' });
 
-  // === LOGIC ĐỒNG BỘ DỮ LIỆU THÔNG MINH (từ code của bạn) ===
   const syncAndProcessData = async () => {
     setLoading(true);
     try {
@@ -47,29 +43,31 @@ export default function CategoryManagement() {
         getProducts({ _limit: 1000 })
       ]);
       
-      const managedCategories = managedCatsRes.data || [];
+      const managedCategories: Category[] = managedCatsRes.data || [];
       const products: Books[] = productsRes.data || [];
-      const categoryMap = new Map<number, DisplayCategory>();
 
-      // Tính toán số lượng sản phẩm cho mỗi danh mục
-      const productCounts = new Map<number, number>();
+      const productCounts = new Map<string | number, number>();
       products.forEach(product => {
         if (product.categories?.id) {
-          productCounts.set(product.categories.id, (productCounts.get(product.categories.id) || 0) + 1);
+          const count = productCounts.get(product.categories.id) || 0;
+          productCounts.set(product.categories.id, count + 1);
         }
       });
       
-      // Hợp nhất dữ liệu từ hai nguồn
-      const allCategories: Category[] = [...managedCategories];
+      const categoryMap = new Map<string | number, Category>();
       products.forEach(p => {
-        if (p.categories && !allCategories.some(c => c.id === p.categories.id)) {
-          allCategories.push(p.categories);
+        if (p.categories && p.categories.id) {
+            categoryMap.set(p.categories.id, p.categories);
         }
       });
       
-      // Tạo danh sách hiển thị cuối cùng
-      const finalDisplayCategories = allCategories
-        .filter((cat, index, self) => index === self.findIndex(c => c.id === cat.id)) // Đảm bảo duy nhất
+      managedCategories.forEach(cat => {
+        if (!categoryMap.has(cat.id)) {
+          categoryMap.set(cat.id, cat);
+        }
+      });
+
+      const finalDisplayCategories = Array.from(categoryMap.values())
         .map(cat => ({
           ...cat,
           productCount: productCounts.get(cat.id) || 0
@@ -88,20 +86,18 @@ export default function CategoryManagement() {
     document.title = "Quản lý Danh mục | Admin";
     void syncAndProcessData();
   }, []);
-
-  // === CRUD & FORM HANDLING (kết hợp) ===
-  const resetForm = () => setFormData({ name: '', description: '' });
+  
+  const resetForm = () => setFormData({ name: '' });
 
   const handleCreate = async () => {
     if (!token) return toast.error("Thiếu quyền xác thực");
     if (!formData.name.trim()) return toast.error("Vui lòng nhập tên danh mục");
-    
     try {
-      await createCategory({ name: formData.name }, token); // Giả sử API create chỉ cần name
+      await createCategory({ name: formData.name }, token);
       toast.success("Đã thêm danh mục mới");
       setIsCreateDialogOpen(false);
       resetForm();
-      await syncAndProcessData(); // Tải lại dữ liệu sau khi thêm
+      await syncAndProcessData();
     } catch (e: any) {
       toast.error(e.message || "Thêm thất bại");
     }
@@ -109,7 +105,7 @@ export default function CategoryManagement() {
 
   const handleEdit = (category: DisplayCategory) => {
     setSelectedCategory(category);
-    setFormData({ name: category.name, description: category.description || '' });
+    setFormData({ name: category.name });
     setIsEditDialogOpen(true);
   };
 
@@ -120,13 +116,13 @@ export default function CategoryManagement() {
       toast.success("Đã cập nhật danh mục");
       setIsEditDialogOpen(false);
       resetForm();
-      await syncAndProcessData(); // Tải lại dữ liệu sau khi sửa
+      await syncAndProcessData();
     } catch (e: any) {
       toast.error(e.message || "Cập nhật thất bại");
     }
   };
 
-  const handleDelete = async (categoryId: number, categoryName: string) => {
+  const handleDelete = async (categoryId: string | number, categoryName: string) => {
     if (!token) return toast.error("Thiếu quyền xác thực");
     const category = displayCategories.find(c => c.id === categoryId);
     if (category && category.productCount > 0) {
@@ -137,9 +133,9 @@ export default function CategoryManagement() {
     try {
       await deleteCategory(categoryId, token);
       toast.success("Đã xóa danh mục");
-      await syncAndProcessData(); // Tải lại dữ liệu sau khi xóa
+      await syncAndProcessData();
     } catch (e: any) {
-      toast.error(e.message || "Xóa thất bại");
+      toast.error(e.message || "Xóa thất bại.");
     }
   };
 
@@ -148,11 +144,8 @@ export default function CategoryManagement() {
       category.name.toLowerCase().includes(searchTerm.toLowerCase())
     ), [displayCategories, searchTerm]);
 
-  if (loading) {
-    return <div>Đang tải...</div>; // Thêm skeleton loading tại đây nếu muốn
-  }
+  if (loading) return <div>Đang tải...</div>;
   
-  // === JSX: Từ code mẫu ===
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -162,11 +155,9 @@ export default function CategoryManagement() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild><Button className="bg-gradient-primary text-primary-foreground hover:opacity-90"><Plus className="h-4 w-4 mr-2" />Thêm danh mục</Button></DialogTrigger>
-          <DialogContent><DialogHeader><DialogTitle>Thêm danh mục mới</DialogTitle><DialogDescription>Tạo danh mục sản phẩm mới cho cửa hàng</DialogDescription></DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2"><Label htmlFor="name">Tên danh mục *</Label><Input id="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Ví dụ: Lập trình" /></div>
-              <div className="space-y-2"><Label htmlFor="description">Mô tả</Label><Textarea id="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Mô tả về danh mục này..." rows={3} /></div>
-            </div>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Thêm danh mục mới</DialogTitle><DialogDescription>Tạo danh mục sản phẩm mới cho cửa hàng</DialogDescription></DialogHeader>
+            <div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="name">Tên danh mục *</Label><Input id="name" value={formData.name} onChange={(e) => setFormData({ name: e.target.value })} placeholder="Ví dụ: Lập trình" /></div></div>
             <div className="flex justify-end space-x-2"><Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Hủy</Button><Button onClick={handleCreate} className="bg-gradient-primary text-primary-foreground hover:opacity-90">Thêm danh mục</Button></div>
           </DialogContent>
         </Dialog>
@@ -192,25 +183,38 @@ export default function CategoryManagement() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <CardDescription className="mb-4">{category.description || 'Chưa có mô tả'}</CardDescription>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center space-x-1"><Calendar className="h-3 w-3" /><span>ID: {category.id}</span></div>
+                <div className="flex items-center space-x-1"><span className="font-semibold">ID:</span><span>{category.id}</span></div>
+                {category.createdAt && <div className="flex items-center space-x-1"><Calendar className="h-3 w-3" /><span>{new Date(category.createdAt).toLocaleDateString('vi-VN')}</span></div>}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
+      
+      {/* === SỬA LỖI Ở ĐÂY === */}
+      {/* Thay thế comment bằng component Card thông báo */}
       {filteredCategories.length === 0 && (
-        <Card><CardContent className="py-12 text-center"><FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3 className="text-lg font-medium text-foreground mb-2">Không tìm thấy danh mục</h3><p className="text-muted-foreground mb-4">{searchTerm ? 'Không có danh mục nào khớp với từ khóa tìm kiếm' : 'Chưa có danh mục nào'}</p></CardContent></Card>
+        <Card>
+            <CardContent className="py-12 text-center">
+                <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                    Không tìm thấy danh mục
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                    {searchTerm 
+                        ? 'Không có danh mục nào khớp với từ khóa tìm kiếm' 
+                        : 'Chưa có danh mục nào trong hệ thống.'
+                    }
+                </p>
+            </CardContent>
+        </Card>
       )}
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent><DialogHeader><DialogTitle>Chỉnh sửa danh mục</DialogTitle><DialogDescription>Cập nhật thông tin danh mục</DialogDescription></DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label htmlFor="edit-name">Tên danh mục *</Label><Input id="edit-name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
-            <div className="space-y-2"><Label htmlFor="edit-description">Mô tả</Label><Textarea id="edit-description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} /></div>
-          </div>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Chỉnh sửa danh mục</DialogTitle><DialogDescription>Cập nhật thông tin danh mục</DialogDescription></DialogHeader>
+          <div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="edit-name">Tên danh mục *</Label><Input id="edit-name" value={formData.name} onChange={(e) => setFormData({ name: e.target.value })} /></div></div>
           <div className="flex justify-end space-x-2"><Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Hủy</Button><Button onClick={handleUpdate} className="bg-gradient-primary text-primary-foreground hover:opacity-90">Cập nhật</Button></div>
         </DialogContent>
       </Dialog>

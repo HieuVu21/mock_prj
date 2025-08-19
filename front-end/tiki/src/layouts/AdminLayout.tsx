@@ -104,14 +104,6 @@ export default function AdminLayout() {
             <Button
               variant="ghost"
               size="sm"
-              className={cn( "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50", !sidebarOpen && "justify-center" )}
-            >
-              <Settings className="h-4 w-4 flex-shrink-0" />
-              {sidebarOpen && <span className="ml-3">Cài đặt</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
               onClick={logout} // Giữ lại logic logout
               className={cn( "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50", !sidebarOpen && "justify-center" )}
             >

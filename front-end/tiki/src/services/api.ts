@@ -74,10 +74,10 @@ export async function getCategories(query?: Query) {
 export async function createCategory(body: { name: string }, token: string) {
   return api<Category>(`/categories`, { method: "POST", body: JSON.stringify(body) }, token);
 }
-export async function updateCategory(id: number, body: { name: string }, token: string) {
+export async function updateCategory(id: string | number, body: { name: string }, token: string) {
   return api<Category>(`/categories/${id}`, { method: "PUT", body: JSON.stringify(body) }, token);
 }
-export async function deleteCategory(id: number, token: string) {
+export async function deleteCategory(id: string | number, token: string) {
   return api<void>(`/categories/${id}`, { method: "DELETE" }, token);
 }
 
@@ -92,7 +92,7 @@ export async function createUser(body: Partial<User>, token: string) {
 }
 
 export async function updateUser(id: string | number, body: Partial<User>, token: string) {
-  return api<User>(`/users/${id}`, { method: "PUT", body: JSON.stringify(body) }, token);
+  return api<User>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }, token);
 }
 
 export async function deleteUser(id: string | number, token: string) {

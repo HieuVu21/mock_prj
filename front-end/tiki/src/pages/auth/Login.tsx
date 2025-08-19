@@ -1,65 +1,101 @@
+// src/pages/auth/Login.tsx
+
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
 import { Link, useLocation } from "react-router-dom";
+import { KeyRound, Loader2 } from 'lucide-react';
+
+// Import các component UI mới
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface LoginForm {
   email: string;
   password: string;
 }
 
-export default function Login() {
+export default function LoginPage() {
   const { login } = useAuth();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>();
-  const location = useLocation() as any;
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/admin";
 
   useEffect(() => {
     document.title = "Đăng nhập Admin | BookStore";
   }, []);
 
-  const onSubmit = async (values: LoginForm) => {
+  const onSubmit: SubmitHandler<LoginForm> = async (values) => {
     try {
       await login(values.email, values.password);
       toast.success("Đăng nhập thành công!");
+      // Sau khi login thành công, điều hướng đến trang admin hoặc trang người dùng định đến
+      // useNavigate đã được xử lý bên trong hàm login của AuthContext
     } catch (e: any) {
-      toast.error(e.message || "Đăng nhập thất bại");
+      toast.error(e.message || "Email hoặc mật khẩu không chính xác.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h1 className="card-title text-2xl">Đăng nhập quản trị</h1>
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm animate-fade-in">
+        <CardHeader className="text-center">
+          <div className="mx-auto p-3 rounded-lg bg-gradient-primary/10 w-fit mb-4">
+            <KeyRound className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Đăng nhập Quản trị</CardTitle>
+          <CardDescription>Sử dụng tài khoản admin để truy cập hệ thống</CardDescription>
+        </CardHeader>
+        <CardContent>
           {location?.state?.from && (
-            <div className="alert alert-info text-sm">
-              Bạn cần đăng nhập bằng tài khoản admin để truy cập trang quản trị.
+            <div className="mb-4 p-3 bg-secondary border border-border rounded-md text-center text-sm text-secondary-foreground">
+              Bạn cần đăng nhập để truy cập trang này.
             </div>
           )}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="form-control">
-              <label className="label"><span className="label-text">Email</span></label>
-              <input type="email" className="input input-bordered" placeholder="admin@example.com"
-                {...register("email", { required: "Vui lòng nhập email" })} />
-              {errors.email && <span className="text-error text-sm mt-1">{errors.email.message}</span>}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  {...register("email", { required: "Vui lòng nhập email" })}
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Mật khẩu</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...register("password", { required: "Vui lòng nhập mật khẩu" })}
+                />
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+              </div>
+              <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Đăng nhập'
+                )}
+              </Button>
             </div>
-            <div className="form-control">
-              <label className="label"><span className="label-text">Mật khẩu</span></label>
-              <input type="password" className="input input-bordered" placeholder="••••••••"
-                {...register("password", { required: "Vui lòng nhập mật khẩu" })} />
-              {errors.password && <span className="text-error text-sm mt-1">{errors.password.message}</span>}
-            </div>
-            <button className="btn btn-primary w-full" disabled={isSubmitting}>
-              {isSubmitting && <span className="loading loading-spinner" />} Đăng nhập
-            </button>
           </form>
-          <p className="text-xs opacity-70 mt-2">Hệ thống chỉ cho phép tài khoản có role "admin" truy cập trang quản trị.</p>
-          <div className="mt-2 text-sm">
-            <Link to="/" className="link">Quay về trang chủ</Link>
+          <div className="mt-4 text-center text-sm">
+            <Link to="/" className="underline text-muted-foreground hover:text-primary">
+              Quay về trang chủ
+            </Link>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
