@@ -1,7 +1,12 @@
-import { type Books, type Category } from "@/interface/book.interface";
-import { triggerAuthError } from "@/lib/auth-interceptor";
-import { User } from "@/interface/user.interface"; 
-import { Order } from "@/interface/order.interface";
+import {
+  type Books,
+  type Category,
+  type CartItem,
+  type Cart,
+} from "../interface/book.interface";
+import { triggerAuthError } from "../lib/auth-interceptor";
+import { type User } from "../interface/user.interface";
+import { type Order } from "../interface/order.interface";
 
 export const API_URL = "http://localhost:3000"; // Change if needed
 
@@ -55,7 +60,10 @@ async function api<T>(path: string, init?: RequestInit, token?: string): Promise
     }
   }
   const contentType = res.headers.get("content-type");
-  const data = contentType && contentType.includes("application/json") ? await res.json() : (undefined as unknown as T);
+  const data =
+    contentType && contentType.includes("application/json")
+      ? await res.json()
+      : (undefined as unknown as T);
   return { data, headers: res.headers };
 }
 
@@ -66,53 +74,137 @@ export async function getProducts(query?: Query) {
 export async function getProduct(id: string | number) {
   return api<Books>(`/books/${id}`);
 }
-export async function createProduct(body: Partial<Books>, token: string) {
-  return api<Books>(`/books`, { method: "POST", body: JSON.stringify(body) }, token);
+export async function createProduct(body: Partial<Books>) {
+  return api<Books>(`/books`, { method: "POST", body: JSON.stringify(body) });
 }
-export async function updateProduct(id: string | number, body: Partial<Books>, token: string) {
-  return api<Books>(`/books/${id}`, { method: "PUT", body: JSON.stringify(body) }, token);
+export async function updateProduct(id: string | number, body: Partial<Books>) {
+  return api<Books>(`/books/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }
-export async function deleteProduct(id: string | number, token: string) {
-  return api<void>(`/books/${id}`, { method: "DELETE" }, token);
+export async function deleteProduct(id: string | number) {
+  return api<void>(`/books/${id}`, { method: "DELETE" });
 }
 
 // Categories
 export async function getCategories(query?: Query) {
   return api<Category[]>(`/categories${buildQuery(query)}`);
 }
-export async function createCategory(body: { name: string }, token: string) {
-  return api<Category>(`/categories`, { method: "POST", body: JSON.stringify(body) }, token);
+export async function createCategory(body: { name: string }) {
+  return api<Category>(`/categories`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
-export async function updateCategory(id: string | number, body: { name: string }, token: string) {
-  return api<Category>(`/categories/${id}`, { method: "PUT", body: JSON.stringify(body) }, token);
+export async function updateCategory(id: number, body: { name: string }) {
+  return api<Category>(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }
-export async function deleteCategory(id: string | number, token: string) {
-  return api<void>(`/categories/${id}`, { method: "DELETE" }, token);
+export async function deleteCategory(id: number) {
+  return api<void>(`/categories/${id}`, { method: "DELETE" });
 }
 
 // Users
-export async function getUsers(token: string) {
-  return api<User[]>(`/users`, undefined, token);
+export async function getUsers() {
+  return api<User[]>(`/users`);
 }
-export async function createUser(body: Partial<User>, token: string) {
+
+export async function getCurrentUser() {
+  // Try to get user id/email from cached auth or token payload
+  let userId: string | number | undefined;
+  let email: string | undefined;
+
+  const rawAuth = localStorage.getItem("auth");
+  if (rawAuth) {
+    try {
+      const parsed = JSON.parse(rawAuth) as { token?: string; user?: Partial<User> & { id?: string | number } };
+      if (parsed?.user?.id != null) userId = parsed.user.id;
+      if (parsed?.user?.email) email = parsed.user.email;
+    } catch {
+      // ignore
+    }
+  }
+
+  const token = localStorage.getItem("token");
+  if (!userId && token) {
+    try {
+      const [, payload] = token.split(".");
+      const decoded = JSON.parse(atob(payload)) as { sub?: string | number; userId?: string | number; id?: string | number; email?: string };
+      userId = decoded.sub ?? decoded.userId ?? decoded.id ?? userId;
+      email = email ?? decoded.email;
+    } catch {
+      // ignore
+    }
+  }
+
+  if (userId != null) {
+    return api<User>(`/users/${userId}`);
+  }
+
+  if (email) {
+    const res = await api<User[]>(`/users?email=${encodeURIComponent(email)}`);
+    if (Array.isArray(res.data) && res.data.length > 0) {
+      return { data: res.data[0], headers: res.headers };
+    }
+  }
+
+  throw new Error("Không tìm thấy người dùng hiện tại");
+}
+
+export async function createUser(body: Partial<User>) {
   // json-server không yêu cầu token để tạo user, nhưng ta vẫn truyền để đồng bộ
   // API thực tế sẽ cần endpoint /register hoặc tương tự
-  return api<User>(`/users`, { method: "POST", body: JSON.stringify(body) }, token);
+  return api<User>(`/users`, { method: "POST", body: JSON.stringify(body) });
 }
 
-export async function updateUser(id: string | number, body: Partial<User>, token: string) {
-  return api<User>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }, token);
+export async function updateUser(id: string | number, body: Partial<User>) {
+  return api<User>(`/users/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }
 
-export async function deleteUser(id: string | number, token: string) {
-  return api<void>(`/users/${id}`, { method: "DELETE" }, token);
+export async function deleteUser(id: string | number) {
+  return api<void>(`/users/${id}`, { method: "DELETE" });
 }
 
 // Orders
 export async function getOrders(query?: Query) {
   return api<Order[]>(`/orders${buildQuery(query)}`);
 }
-export async function updateOrderStatus(id: string | number, status: Order['status'], token: string) {
+export async function updateOrderStatus(
+  id: string | number,
+  status: Order["status"]
+) {
   // Chỉ cập nhật trường status
-  return api<Order>(`/orders/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }, token);
+  return api<Order>(`/orders/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+// Cart
+export async function getCart() {
+  return api<Cart>("/cart");
+}
+
+export async function addToCart(item: { bookId: string; quantity: number }) {
+  return api<CartItem>("/cart/items", {
+    method: "POST",
+    body: JSON.stringify(item),
+  });
+}
+
+export async function updateCartItem(id: string, quantity: number) {
+  return api<CartItem>(`/cart/items/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ quantity }),
+  });
+}
+
+export async function deleteCartItem(id: string) {
+  return api<void>(`/cart/items/${id}`, { method: "DELETE" });
 }

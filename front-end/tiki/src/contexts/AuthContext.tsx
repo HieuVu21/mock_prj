@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerAuthInterceptor } from "@/lib/auth-interceptor"; 
+import toast from "react-hot-toast";
 
 export type Role = "admin" | "user";
 export interface AuthUser {
@@ -56,21 +57,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(data.accessToken);
       setUser(data.user);
       localStorage.setItem("auth", JSON.stringify({ token: data.accessToken, user: data.user }));
-      navigate("/admin", { replace: true });
+      // Đồng bộ với phần còn lại của app (api.ts, Header, CartContext)
+      localStorage.setItem("token", data.accessToken);
+      window.dispatchEvent(new Event("auth-change"));
+
+      // Điều hướng theo vai trò
+      if ((data.user?.role ?? "user") === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+      toast.success("Đăng nhập thành công!");
     } finally {
       setLoading(false);
     }
   };
 
   const logout = () => {
+    // Lưu path hiện tại trước khi clear state
+    const currentPath = window.location.pathname;
+    
+    // Clear state và localStorage
     setUser(null);
     setToken(null);
     localStorage.removeItem("auth");
-    navigate("/login", { replace: true });
+    localStorage.removeItem("token");
+    window.dispatchEvent(new Event("auth-change"));
+    
+    // Nếu đang ở trang admin thì về trang chủ hiển thị sản phẩm
+    if (currentPath.startsWith('/admin')) {
+      navigate("/", { replace: true });
+    }
   };
-    useEffect(() => {
-    registerAuthInterceptor(logout);
-  }, []);
+
+  // Nếu token hết hạn ở các trang public, chỉ clear state thay vì redirect
+  const handleAuthError = () => {
+    try {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("auth");
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth-change"));
+
+      const path = window.location.pathname;
+      // Chỉ chuyển hướng nếu đang ở khu vực yêu cầu quyền
+      if (path.startsWith("/admin")) {
+        navigate("/login", { replace: true });
+      }
+      // Ở trang public (/, /books, /cart, ...): không redirect, để người dùng tiếp tục xem
+    } catch {
+      // no-op
+    }
+  };
+
+  useEffect(() => {
+    registerAuthInterceptor(handleAuthError);
+  }, [navigate]);
   const value = useMemo<AuthContextValue>(() => ({
     user,
     token,

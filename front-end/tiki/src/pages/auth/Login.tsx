@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
-import { Link, useLocation } from "react-router-dom";
 import { KeyRound, Loader2 } from 'lucide-react';
 
 // Import các component UI mới
@@ -12,6 +11,7 @@ import { Button } from "@/component/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
 import { Input } from "@/component/ui/input";
 import { Label } from "@/component/ui/label";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface LoginForm {
   email: string;
@@ -21,19 +21,43 @@ interface LoginForm {
 export default function LoginPage() {
   const { login } = useAuth();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/admin";
+  const location = useLocation() as any;
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Đăng nhập Admin | BookStore";
-  }, []);
+    
+    // Kiểm tra nếu đã đăng nhập thì redirect
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('token');
+      const auth = localStorage.getItem('auth');
+      
+      if (token && auth) {
+        try {
+          const authData = JSON.parse(auth);
+          if (authData.user && authData.user.role) {
+            // Đã đăng nhập, redirect theo role
+            if (authData.user.role === 'admin') {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/', { replace: true });
+            }
+            return;
+          }
+        } catch (error) {
+          // Token không hợp lệ, xóa và hiển thị form
+          localStorage.removeItem('token');
+          localStorage.removeItem('auth');
+        }
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate]);
 
   const onSubmit: SubmitHandler<LoginForm> = async (values) => {
     try {
       await login(values.email, values.password);
-      toast.success("Đăng nhập thành công!");
-      // Sau khi login thành công, điều hướng đến trang admin hoặc trang người dùng định đến
-      // useNavigate đã được xử lý bên trong hàm login của AuthContext
     } catch (e: any) {
       toast.error(e.message || "Email hoặc mật khẩu không chính xác.");
     }

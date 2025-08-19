@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/component/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/component/ui/dialog';
 import { Label } from '@/component/ui/label';
+import { Textarea } from '@/component/ui/textarea';
 
 // Import API, Auth và Interfaces
 import { createCategory, deleteCategory, getCategories, getProducts, updateCategory } from "@/services/api";

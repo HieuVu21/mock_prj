@@ -8,7 +8,7 @@ import {
   Plus, Search, Filter, MoreHorizontal, Edit2, Trash2, SortAsc, SortDesc, Image as ImageIcon 
 } from 'lucide-react';
 
-// Import các component UI
+// Import các component UI bạn đã có
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/component/ui/card';

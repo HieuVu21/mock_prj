@@ -8,7 +8,7 @@ import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/component/ui/card';
 import { Badge } from '@/component/ui/badge';
-import { Avatar, AvatarFallback } from '@/component/ui/avatar';
+    import { Avatar, AvatarFallback } from '@/component/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/component/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/component/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/component/ui/dialog';
