@@ -206,7 +206,7 @@ export default function AdminDashboard() {
          </CardHeader>
          <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button onClick={() => navigate('/admin/products/new')} className="h-24 flex-col space-y-2">
+            <Button onClick={() => navigate('/admin/products/', { state: { openCreateModal: true } })} className="h-24 flex-col space-y-2">
               <Package className="h-6 w-6" /><span>Thêm sản phẩm</span>
             </Button>
             <Button onClick={() => navigate('/admin/users')} variant="outline" className="h-24 flex-col space-y-2">

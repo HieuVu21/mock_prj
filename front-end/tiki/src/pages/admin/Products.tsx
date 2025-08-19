@@ -1,7 +1,8 @@
 // src/pages/admin/Products.tsx
 
 import { useEffect, useState, useMemo, type ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+// Import thêm useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { 
   Plus, Search, Filter, MoreHorizontal, Edit2, Trash2, SortAsc, SortDesc, Image as ImageIcon 
@@ -23,6 +24,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createProduct, deleteProduct, getProducts, getCategories, updateProduct, type Query } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Books, Category, Author, Image } from "@/interface/book.interface";
+
+// Component Form Fields để tái sử dụng
+const ProductFormFields = ({ formData, setFormData, allCategories, handleImageChange }: {
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  allCategories: Category[];
+  handleImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}) => (
+  <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2"><Label>Tên sản phẩm *</Label><Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
+      <div className="space-y-2"><Label>Tên tác giả</Label><Input value={formData.authorName} onChange={(e) => setFormData({...formData, authorName: e.target.value})} /></div>
+    </div>
+    <div className="space-y-2"><Label>Danh mục *</Label><Select value={formData.categoryId} onValueChange={(value) => setFormData({...formData, categoryId: value})}><SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger><SelectContent>{allCategories.map((cat) => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2"><Label>Giá bán *</Label><Input value={formData.list_price} onChange={(e) => setFormData({...formData, list_price: e.target.value})} type="number" /></div>
+      <div className="space-y-2"><Label>Giá gốc</Label><Input value={formData.original_price} onChange={(e) => setFormData({...formData, original_price: e.target.value})} type="number" /></div>
+    </div>
+    <div className="space-y-2"><Label>Mô tả ngắn</Label><Textarea value={formData.short_description} onChange={(e) => setFormData({...formData, short_description: e.target.value})} rows={3} /></div>
+    <div className="space-y-2"><Label>Mô tả chi tiết</Label><Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={6} /></div>
+    <div className="space-y-2">
+      <Label>Hình ảnh sản phẩm</Label>
+      <div className="flex items-center gap-4">
+        <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted flex-shrink-0">
+          {formData.imageUrl ? <img src={formData.imageUrl} alt="Preview" className="h-full w-full object-contain"/> : <ImageIcon className="h-8 w-8 text-muted-foreground"/>}
+        </div>
+        <div className="w-full space-y-2">
+          <Input placeholder="Hoặc dán link ảnh vào đây" value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} />
+          <Input type="file" accept="image/*" onChange={handleImageChange} />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
@@ -52,65 +87,67 @@ export default function ProductManagement() {
     imageUrl: ''
   });
 
+  const navigate = useNavigate();
+  const location = useLocation(); // Khai báo hook useLocation
   const { token } = useAuth();
   
-  // Gộp lại thành một useEffect duy nhất để quản lý tất cả các lệnh gọi API
+  // useEffect này chỉ chạy một lần để lấy danh sách ĐẦY ĐỦ các danh mục
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchInitialCategories = async () => {
       try {
-        const params: Query = {
-          _sort: sortField,
-          _order: sortDirection,
-          name_like: searchTerm || undefined,
-        };
-        if (selectedCategory !== 'all') {
-          params['categories.id'] = selectedCategory;
-        }
-
-        // Lấy danh sách sản phẩm đã được lọc VÀ danh sách danh mục được quản lý
-        const [productsRes, managedCatsRes] = await Promise.all([
-          getProducts(params),
-          getCategories()
+        const [managedCatsRes, allProductsRes] = await Promise.all([
+          getCategories(),
+          getProducts({ _limit: 1000 })
         ]);
-
-        const fetchedProducts = productsRes.data || [];
         const managedCategories = managedCatsRes.data || [];
-        
-        setProducts(fetchedProducts);
-        setTotal(Number(productsRes.headers.get("X-Total-Count") || fetchedProducts.length || 0));
-
-        // Logic hợp nhất để đảm bảo bộ lọc luôn có đủ danh mục
-        // Nếu danh sách category đã có, ta không cần lấy lại toàn bộ sản phẩm nữa
-        if (allCategories.length === 0) {
-            const allProductsResForCategories = await getProducts({ _limit: 1000 });
-            const allProducts = allProductsResForCategories.data || [];
-
-            const categoryMap = new Map<string | number, Category>();
-            allProducts.forEach(product => {
-                if (product.categories?.id && !categoryMap.has(product.categories.id)) {
-                    categoryMap.set(product.categories.id, product.categories);
-                }
-            });
-            managedCategories.forEach(cat => {
-                if (!categoryMap.has(cat.id)) {
-                    categoryMap.set(cat.id, cat);
-                }
-            });
-            
-            const finalCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-            setAllCategories(finalCategories);
-        }
-
-      } catch (error) {
-        toast.error("Tải dữ liệu thất bại.");
-      } finally {
-        setLoading(false);
-      }
+        const allProducts = allProductsRes.data || [];
+        const categoryMap = new Map<string | number, Category>();
+        allProducts.forEach(product => {
+          if (product.categories?.id && !categoryMap.has(product.categories.id)) {
+            categoryMap.set(product.categories.id, product.categories);
+          }
+        });
+        managedCategories.forEach(cat => {
+          if (!categoryMap.has(cat.id)) {
+            categoryMap.set(cat.id, cat);
+          }
+        });
+        const finalCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        setAllCategories(finalCategories);
+      } catch (error) { toast.error("Tải danh sách danh mục thất bại."); }
     };
-    
-    void fetchData();
+    void fetchInitialCategories();
+  }, []);
+
+  // useEffect này chạy mỗi khi bộ lọc thay đổi để lấy danh sách SẢN PHẨM
+  useEffect(() => {
+    setLoading(true);
+    const params: Query = {
+      _sort: sortField,
+      _order: sortDirection,
+      name_like: searchTerm || undefined,
+    };
+    if (selectedCategory !== 'all') {
+      params['categories.id'] = selectedCategory;
+    }
+
+    getProducts(params)
+      .then(({ data, headers }) => {
+        setProducts(data || []);
+        setTotal(Number(headers.get("X-Total-Count") || data?.length || 0));
+      })
+      .catch(() => toast.error("Lọc sản phẩm thất bại."))
+      .finally(() => setLoading(false));
   }, [searchTerm, sortField, sortDirection, selectedCategory]);
+  
+  // useEffect MỚI: XỬ LÝ TÍN HIỆU TỪ DASHBOARD
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setIsCreateDialogOpen(true);
+      // Xóa state đi sau khi đã mở dialog để tránh bị mở lại khi re-render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   const handleSort = (field: string) => {
     if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -127,13 +164,10 @@ export default function ProductManagement() {
     const images: Image[] = formData.imageUrl ? [{ base_url: formData.imageUrl, thumbnail_url: formData.imageUrl } as Image] : [];
     
     return {
-      name: formData.name,
-      authors: [author],
-      categories: category,
+      name: formData.name, authors: [author], categories: category,
       list_price: Number(formData.list_price),
       original_price: Number(formData.original_price || formData.list_price),
-      description: formData.description,
-      short_description: formData.short_description,
+      description: formData.description, short_description: formData.short_description,
       images: images,
     };
   };
@@ -141,14 +175,8 @@ export default function ProductManagement() {
   const handleCreate = async () => {
     if (!token) return toast.error("Thiếu quyền xác thực");
     if (!formData.name || !formData.categoryId || !formData.list_price) return toast.error("Vui lòng điền các trường bắt buộc (*)");
-    
     try {
-      const body: Partial<Books> = {
-        ...createBodyFromForm(),
-        rating_average: 0, 
-        quantity_sold: { value: 0, text: 'Đã bán 0' }
-      };
-      
+      const body: Partial<Books> = { ...createBodyFromForm(), rating_average: 0, quantity_sold: { value: 0, text: 'Đã bán 0' } };
       const { data: newProduct } = await createProduct(body, token);
       setProducts([newProduct, ...products]);
       setTotal(prev => prev + 1);
@@ -201,43 +229,13 @@ export default function ProductManagement() {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
-    };
+    reader.onloadend = () => { setFormData(prev => ({ ...prev, imageUrl: reader.result as string })); };
     reader.readAsDataURL(file);
     toast.success("Đã tải ảnh lên, sẵn sàng để lưu.");
   };
 
-  if (loading) return <div>Đang tải dữ liệu...</div>;
+  if (loading && allCategories.length === 0) return <div>Đang tải dữ liệu...</div>;
   
-  const ProductFormFields = () => (
-    <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2"><Label>Tên sản phẩm *</Label><Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
-        <div className="space-y-2"><Label>Tên tác giả</Label><Input value={formData.authorName} onChange={(e) => setFormData({...formData, authorName: e.target.value})} /></div>
-      </div>
-      <div className="space-y-2"><Label>Danh mục *</Label><Select value={formData.categoryId} onValueChange={(value) => setFormData({...formData, categoryId: value})}><SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger><SelectContent>{allCategories.map(cat => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2"><Label>Giá bán *</Label><Input value={formData.list_price} onChange={(e) => setFormData({...formData, list_price: e.target.value})} type="number" /></div>
-        <div className="space-y-2"><Label>Giá gốc</Label><Input value={formData.original_price} onChange={(e) => setFormData({...formData, original_price: e.target.value})} type="number" /></div>
-      </div>
-      <div className="space-y-2"><Label>Mô tả ngắn</Label><Textarea value={formData.short_description} onChange={(e) => setFormData({...formData, short_description: e.target.value})} rows={3} /></div>
-      <div className="space-y-2"><Label>Mô tả chi tiết</Label><Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={6} /></div>
-      <div className="space-y-2">
-        <Label>Hình ảnh sản phẩm</Label>
-        <div className="flex items-center gap-4">
-          <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted flex-shrink-0">
-            {formData.imageUrl ? <img src={formData.imageUrl} alt="Preview" className="h-full w-full object-contain"/> : <ImageIcon className="h-8 w-8 text-muted-foreground"/>}
-          </div>
-          <div className="w-full space-y-2">
-            <Input placeholder="Hoặc dán link ảnh vào đây" value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} />
-            <Input type="file" accept="image/*" onChange={handleImageChange} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -246,7 +244,7 @@ export default function ProductManagement() {
           <DialogTrigger asChild><Button className="bg-gradient-primary text-primary-foreground hover:opacity-90"><Plus className="h-4 w-4 mr-2" />Thêm sản phẩm</Button></DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader><DialogTitle>Thêm sản phẩm mới</DialogTitle></DialogHeader>
-            <ProductFormFields />
+            <ProductFormFields formData={formData} setFormData={setFormData} allCategories={allCategories} handleImageChange={handleImageChange} />
             <div className="flex justify-end gap-2 pt-4 border-t"><Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Hủy</Button><Button onClick={handleCreate} className="bg-gradient-primary text-primary-foreground hover:opacity-90">Thêm</Button></div>
           </DialogContent>
         </Dialog>
@@ -276,16 +274,7 @@ export default function ProductManagement() {
         <CardHeader><CardTitle>Danh sách sản phẩm</CardTitle><CardDescription>Hiển thị {products.length} trên tổng số {total} sản phẩm</CardDescription></CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">Sản phẩm</TableHead>
-                <TableHead></TableHead>
-                <TableHead>Danh mục</TableHead>
-                <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('list_price')}><div className="flex items-center space-x-1"><span>Giá</span>{sortField === 'list_price' && (sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}</div></TableHead>
-                <TableHead>Đã bán</TableHead>
-                <TableHead className="w-[70px]"></TableHead>
-              </TableRow>
-            </TableHeader>
+            <TableHeader><TableRow><TableHead className="w-[80px]">Sản phẩm</TableHead><TableHead></TableHead><TableHead>Danh mục</TableHead><TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('list_price')}><div className="flex items-center space-x-1"><span>Giá</span>{sortField === 'list_price' && (sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}</div></TableHead><TableHead>Đã bán</TableHead><TableHead className="w-[70px]"></TableHead></TableRow></TableHeader>
             <TableBody>
               {products.map((product) => (
                 <TableRow key={product.id}>
@@ -320,7 +309,7 @@ export default function ProductManagement() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>Chỉnh sửa sản phẩm: {selectedProduct?.name}</DialogTitle></DialogHeader>
-          <ProductFormFields />
+          <ProductFormFields formData={formData} setFormData={setFormData} allCategories={allCategories} handleImageChange={handleImageChange} />
           <div className="flex justify-end gap-2 pt-4 border-t"><Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Hủy</Button><Button onClick={handleUpdate} className="bg-gradient-primary text-primary-foreground hover:opacity-90">Cập nhật</Button></div>
         </DialogContent>
       </Dialog>
