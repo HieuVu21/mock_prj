@@ -230,6 +230,14 @@ const Header = () => {
                           <FiUser />
                           <span>Thông tin cá nhân</span>
                         </Link>
+                        <Link
+                          to="/orders"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <FiShoppingCart />
+                          <span>Lịch sử đơn hàng</span>
+                        </Link>
                         <button
                           onClick={handleLogout}
                           className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"

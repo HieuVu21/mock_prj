@@ -169,7 +169,7 @@ const Profile = () => {
   const sidebarLinks = [
     { icon: <FiUser className="text-xl" />, text: 'Thông tin tài khoản', value: 'profile' },
     { icon: <FiBell className="text-xl" />, text: 'Thông báo của tôi', value: 'notifications' },
-    { icon: <FiPackage className="text-xl" />, text: 'Quản lý đơn hàng', value: 'orders' },
+    { icon: <FiPackage className="text-xl" />, text: 'Quản lý đơn hàng', value: 'orders', link: '/orders' },
     { icon: <FiRefreshCw className="text-xl" />, text: 'Quản lý đổi trả', value: 'returns' },
     { icon: <FiMapPin className="text-xl" />, text: 'Sổ địa chỉ', value: 'addresses' },
     { icon: <FiCreditCard className="text-xl" />, text: 'Thông tin thanh toán', value: 'payment' },
@@ -218,16 +218,27 @@ const Profile = () => {
             </div>
             <div className="space-y-2">
               {sidebarLinks.map((link) => (
-                <div
-                  key={link.value}
-                  className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
-                    selectedTab === link.value ? 'text-[#0d5cb6] bg-gray-100' : 'text-gray-600'
-                  }`}
-                  onClick={() => setSelectedTab(link.value)}
-                >
-                  {link.icon}
-                  <span className="text-sm">{link.text}</span>
-                </div>
+                link.link ? (
+                  <Link
+                    key={link.value}
+                    to={link.link}
+                    className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 text-gray-600"
+                  >
+                    {link.icon}
+                    <span className="text-sm">{link.text}</span>
+                  </Link>
+                ) : (
+                  <div
+                    key={link.value}
+                    className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
+                      selectedTab === link.value ? 'text-[#0d5cb6] bg-gray-100' : 'text-gray-600'
+                    }`}
+                    onClick={() => setSelectedTab(link.value)}
+                  >
+                    {link.icon}
+                    <span className="text-sm">{link.text}</span>
+                  </div>
+                )
               ))}
               <div className="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-100 text-blue-600">
                 <FiShield className="text-xl" />

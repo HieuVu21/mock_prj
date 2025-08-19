@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import Header from '../component/Header';
 import Footer from '../component/Footer';
+import OrderStatusBadge from '../component/OrderStatusBadge';
 
 type LocationState = {
   orderId?: string | number;
   total?: number;
   paymentMethod?: string;
+  status?: string;
 };
 
 const ConfirmPage = () => {
@@ -24,6 +26,11 @@ const ConfirmPage = () => {
                 {state.total != null && (
                   <p className="mt-1">Chuẩn bị tiền mặt {state.total.toLocaleString('vi-VN')} đ</p>
                 )}
+                {state.status && (
+                  <div className="mt-3">
+                    <OrderStatusBadge status={state.status} />
+                  </div>
+                )}
               </div>
               <div className="divide-y">
                 <div className="flex justify-between py-3 text-sm">
@@ -35,8 +42,9 @@ const ConfirmPage = () => {
                   <span className="font-bold">{state.total?.toLocaleString('vi-VN')} đ</span>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 space-y-3">
                 <Link to="/" className="w-full inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md px-4 py-3">Quay về trang chủ</Link>
+                <Link to="/orders" className="w-full inline-block text-center bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-md px-4 py-3">Xem lịch sử đơn hàng</Link>
               </div>
             </div>
           </div>

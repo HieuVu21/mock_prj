@@ -22,6 +22,7 @@ const Categories = lazy(() => import("./pages/admin/Categories"));
 const Users = lazy(() => import("./pages/admin/Users"));
 const Orders = lazy(() => import("./pages/admin/Orders"));
 import Profile from "./pages/Profile";
+import OrderHistory from "./pages/OrderHistory";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/profile" element={<Profile  />} />
                 <Route path="/cart" element={<CartPage  />} />
                 <Route path="/confirm" element={<ConfirmPage />} />
+                <Route path="/orders" element={<OrderHistory />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />

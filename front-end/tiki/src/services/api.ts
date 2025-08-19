@@ -176,7 +176,12 @@ export async function deleteUser(id: string | number) {
 
 // Orders
 export async function getOrders(query?: Query) {
-  return api<Order[]>(`/orders${buildQuery(query)}`);
+  // Nếu có userId, thêm vào query để lọc đơn hàng theo user
+  let queryString = buildQuery(query);
+  if (query?.userId) {
+    queryString = queryString ? `${queryString}&userId=${query.userId}` : `?userId=${query.userId}`;
+  }
+  return api<Order[]>(`/orders${queryString}`);
 }
 export async function getOrder(id: string | number) {
   return api<Order>(`/orders/${id}`);
