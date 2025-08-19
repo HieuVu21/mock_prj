@@ -88,7 +88,7 @@ const BookDetailComponent = () => {
   // CSS styles for the 3-column layout
   const containerStyles: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: isMobile ? '1fr' : '1fr 1.5fr 1fr',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr 0.8fr',
     gap: '2rem',
     width: '100%',
     position: 'relative'
@@ -164,7 +164,7 @@ const BookDetailComponent = () => {
         </div>
       </div>
       <div className="p-6 bg-gray-100" style={{ minHeight: '100vh' }}>
-        <div style={{ maxWidth: '80rem', margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: '120rem', margin: '0 auto', width: '100%' }}>
           <div style={containerStyles}>
             {/* Left Column - Book Images */}
             <div style={leftColumnStyles}>
@@ -251,7 +251,7 @@ const BookDetailComponent = () => {
               <div style={spaceYStyles}>
                 {/* Book Title Card */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex">
+                <div className="flex items-center mb-2">
                       <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
                       <span className="text-blue-600 font-medium text-sm">
                         {getAuthorName()}
@@ -358,15 +358,11 @@ const BookDetailComponent = () => {
                         >
                           {showFullDescription ? (
                             <span className="flex items-center justify-end">
-                              Thu gọn <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
+                              Thu gọn <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
                             </span>
                           ) : (
                             <span className="flex items-center justify-end">
-                              Xem thêm <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
+                              Xem thêm <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </span>
                           )}
                         </button>
@@ -502,6 +498,12 @@ const BookDetailComponent = () => {
                             Chính hãng
                           </span>
                         )}
+                        <div className="flex items-center text-xs text-blue-600 ml-2">
+                          <svg className="w-3.5 h-3.5 text-blue-600 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          OFFICIAL
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -537,7 +539,7 @@ const BookDetailComponent = () => {
                   <div className="text-xl font-bold text-gray-700">
                       Tạm tính
                   </div>
-                  <div className="text-2xl font-bold text-red-600 mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {(book.current_seller?.price ? formatPrice(book.current_seller.price * quantity) : (book.list_price ? formatPrice(book.list_price * quantity) : 'NAN'))}
                   </div>
                 </div>
@@ -548,7 +550,7 @@ const BookDetailComponent = () => {
                 <div className="mb-4">
                   <button 
                     onClick={handleBuyNow}
-                    className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-orange-500 hover:bg-orange-600 transition-colors mb-2"
+                    className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-red-600 hover:bg-red-700 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -557,12 +559,20 @@ const BookDetailComponent = () => {
                   </button>
                   <button 
                     onClick={() => book && addToCart(book, quantity)}
-                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-orange-500 text-orange-500 hover:bg-orange-50 transition-colors"
+                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Thêm vào giỏ
+                  </button>
+                  <button 
+                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Mua trước trả sau
                   </button>
                 </div>
               </div>

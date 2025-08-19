@@ -113,6 +113,14 @@ const Header = () => {
   };
   return (
     <header className="bg-white text-[#808089] py-2 font-sans border-b border-[#f0f0f0]">
+            {/* Top Bar with Freeship message */}
+            <div className="bg-blue-50 py-2">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-sm text-green-600">
+            Freeship đơn từ 45k, giảm nhiều hơn cùng <span className="font-bold">FREESHIP XTRA</span>
+          </div>
+        </div>
+      </div>
       <div className="mx-auto px-5">
         <div className="flex items-center justify-between gap-[20px] ">
           <div className="text-center">
@@ -310,7 +318,9 @@ const Header = () => {
           </div>
         </div>
       </div>
+    
     </header>
+    
   );
 };
 
