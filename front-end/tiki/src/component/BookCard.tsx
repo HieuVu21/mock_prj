@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Books } from "../interface/book.interface";
 import { useCart } from "../contexts/CartContext";
 import DescriptionComponent from "./DescriptionComponent";
@@ -7,6 +7,7 @@ import StarRating from "./StarRating";
 import Header from './Header';
 import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
+import { createOrder } from "../services/api";
 
 const BookDetailComponent = () => {
   const baseUrl = 'https://be-mock-project.vercel.app';
@@ -22,6 +23,7 @@ const BookDetailComponent = () => {
   const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
   const itemsPerPage = 8; // 4 columns x 2 rows
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBookAndRelated = async () => {
@@ -126,6 +128,25 @@ const BookDetailComponent = () => {
       return book.categories.name;
     }
     return 'Danh mục';
+  };
+
+  const handleBuyNow = async () => {
+    if (!book) return;
+    const salePrice = book.current_seller?.price ?? book.list_price ?? 0;
+    try {
+      const { data: order } = await createOrder({
+        id: `order_${Date.now()}`,
+        items: [{ book: { id: book.id, name: book.name, images: book.images, list_price: book.list_price, original_price: book.original_price }, quantity }],
+        totalPrice: salePrice * quantity,
+        status: 'confirmed',
+        shippingAddress: 'Văn phòng: số 17 Duy Tân, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội',
+        paymentMethod: 'Thanh toán tiền mặt',
+        createdAt: new Date().toISOString(),
+      });
+      navigate('/confirm', { state: { orderId: order.id, total: order.totalPrice, paymentMethod: order.paymentMethod } });
+    } catch (e) {
+      // no-op
+    }
   };
 
   return (
@@ -526,6 +547,7 @@ const BookDetailComponent = () => {
                 {/* Action Buttons */}
                 <div className="mb-4">
                   <button 
+                    onClick={handleBuyNow}
                     className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-orange-500 hover:bg-orange-600 transition-colors mb-2"
                   >
                     <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

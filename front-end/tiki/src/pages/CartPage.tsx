@@ -1,17 +1,39 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiTag, FiCreditCard, FiTrash2 } from 'react-icons/fi';
 import Header from '../component/Header';
 import Footer from '../component/Footer';
 import { useCart } from '../contexts/CartContext';
+import { createOrder } from '../services/api';
 
 const CartPage = () => {
-  const { cartItems, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
+  const navigate = useNavigate();
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.list_price * item.quantity, 0);
   const shippingFee = 25000;
   const discount = 59000; // Giảm giá trực tiếp
   const voucherDiscount = 25000;
   const total = subtotal + shippingFee - discount - voucherDiscount;
+
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) return;
+    try {
+      const items = cartItems.map((it) => ({ book: { id: it.id, name: it.name, images: it.images, list_price: it.list_price }, quantity: it.quantity }));
+      const { data: order } = await createOrder({
+        id: `order_${Date.now()}`,
+        items,
+        totalPrice: total,
+        status: 'confirmed',
+        shippingAddress: 'Văn phòng: số 17 Duy Tân, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội',
+        paymentMethod: 'Thanh toán tiền mặt',
+        createdAt: new Date().toISOString(),
+      });
+      clearCart();
+      navigate('/confirm', { state: { orderId: order.id, total: order.totalPrice, paymentMethod: order.paymentMethod } });
+    } catch (e) {
+      // noop visual feedback could be added later
+    }
+  };
 
   return (
     <>
@@ -148,7 +170,7 @@ const CartPage = () => {
                     <span className="text-red-600 text-lg">{total.toLocaleString('vi-VN')}đ</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">(Đã bao gồm VAT nếu có)</p>
-                  <button className="w-full bg-red-500 text-white py-3 rounded-lg mt-4 font-semibold hover:bg-red-600">
+                  <button onClick={handleCheckout} className="w-full bg-red-500 text-white py-3 rounded-lg mt-4 font-semibold hover:bg-red-600">
                     Đặt Hàng
                   </button>
                 </div>

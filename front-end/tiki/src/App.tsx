@@ -13,6 +13,7 @@ import HomeComponent from "./component/BookList";
 import { CartProvider } from "./contexts/CartContext";
 import BookDetailComponent from "./component/BookCard";
 import CartPage from "./pages/CartPage";
+import ConfirmPage from "./pages/Confirm";
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 const Login = lazy(() => import("./pages/auth/Login"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/profile" element={<Profile  />} />
                 <Route path="/cart" element={<CartPage  />} />
+                <Route path="/confirm" element={<ConfirmPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />

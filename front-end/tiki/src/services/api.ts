@@ -178,6 +178,15 @@ export async function deleteUser(id: string | number) {
 export async function getOrders(query?: Query) {
   return api<Order[]>(`/orders${buildQuery(query)}`);
 }
+export async function getOrder(id: string | number) {
+  return api<Order>(`/orders/${id}`);
+}
+export async function createOrder(body: Partial<Order>) {
+  return api<Order>(`/orders`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
 export async function updateOrderStatus(
   id: string | number,
   status: Order["status"]
