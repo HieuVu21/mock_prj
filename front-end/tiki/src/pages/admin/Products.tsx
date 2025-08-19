@@ -8,16 +8,16 @@ import {
 } from 'lucide-react';
 
 // Import các component UI
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/component/ui/button';
+import { Input } from '@/component/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/component/ui/card';
+import { Badge } from '@/component/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/component/ui/dropdown-menu';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/component/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/component/ui/dialog';
+import { Label } from '@/component/ui/label';
+import { Textarea } from '@/component/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/component/ui/select';
 
 // Import logic API, Auth và Interfaces
 import { createProduct, deleteProduct, getProducts, getCategories, updateProduct, type Query } from "@/services/api";
@@ -52,62 +52,64 @@ export default function ProductManagement() {
     imageUrl: ''
   });
 
-  const navigate = useNavigate();
   const { token } = useAuth();
   
-  // Lấy danh sách danh mục đầy đủ một lần
+  // Gộp lại thành một useEffect duy nhất để quản lý tất cả các lệnh gọi API
   useEffect(() => {
-    const fetchInitialCategories = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const [managedCatsRes, allProductsRes] = await Promise.all([
-          getCategories(),
-          getProducts({ _limit: 1000 })
+        const params: Query = {
+          _sort: sortField,
+          _order: sortDirection,
+          name_like: searchTerm || undefined,
+        };
+        if (selectedCategory !== 'all') {
+          params['categories.id'] = selectedCategory;
+        }
+
+        // Lấy danh sách sản phẩm đã được lọc VÀ danh sách danh mục được quản lý
+        const [productsRes, managedCatsRes] = await Promise.all([
+          getProducts(params),
+          getCategories()
         ]);
+
+        const fetchedProducts = productsRes.data || [];
         const managedCategories = managedCatsRes.data || [];
-        const allProducts = allProductsRes.data || [];
-        const categoryMap = new Map<string | number, Category>();
-        allProducts.forEach(product => {
-          if (product.categories?.id && !categoryMap.has(product.categories.id)) {
-            categoryMap.set(product.categories.id, product.categories);
-          }
-        });
-        managedCategories.forEach(cat => {
-          if (!categoryMap.has(cat.id)) {
-            categoryMap.set(cat.id, cat);
-          }
-        });
-        const finalCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-        setAllCategories(finalCategories);
-      } catch (error) { toast.error("Tải danh sách danh mục thất bại."); }
-    };
-    void fetchInitialCategories();
-  }, []);
+        
+        setProducts(fetchedProducts);
+        setTotal(Number(productsRes.headers.get("X-Total-Count") || fetchedProducts.length || 0));
 
-  // Lấy danh sách sản phẩm theo bộ lọc
-  useEffect(() => {
-    setLoading(true);
-    const params: Query = {
-      _sort: sortField,
-      _order: sortDirection,
+        // Logic hợp nhất để đảm bảo bộ lọc luôn có đủ danh mục
+        // Nếu danh sách category đã có, ta không cần lấy lại toàn bộ sản phẩm nữa
+        if (allCategories.length === 0) {
+            const allProductsResForCategories = await getProducts({ _limit: 1000 });
+            const allProducts = allProductsResForCategories.data || [];
+
+            const categoryMap = new Map<string | number, Category>();
+            allProducts.forEach(product => {
+                if (product.categories?.id && !categoryMap.has(product.categories.id)) {
+                    categoryMap.set(product.categories.id, product.categories);
+                }
+            });
+            managedCategories.forEach(cat => {
+                if (!categoryMap.has(cat.id)) {
+                    categoryMap.set(cat.id, cat);
+                }
+            });
+            
+            const finalCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+            setAllCategories(finalCategories);
+        }
+
+      } catch (error) {
+        toast.error("Tải dữ liệu thất bại.");
+      } finally {
+        setLoading(false);
+      }
     };
     
-    // SỬA LẠI LOGIC TÌM KIẾM: Chỉ tìm kiếm theo tên sản phẩm
-    if (searchTerm) {
-        params['name_like'] = searchTerm;
-    }
-    
-    // Lọc theo danh mục
-    if (selectedCategory !== 'all') {
-      params['categories.id'] = selectedCategory;
-    }
-
-    getProducts(params)
-      .then(({ data, headers }) => {
-        setProducts(data || []);
-        setTotal(Number(headers.get("X-Total-Count") || data?.length || 0));
-      })
-      .catch(() => toast.error("Lọc sản phẩm thất bại."))
-      .finally(() => setLoading(false));
+    void fetchData();
   }, [searchTerm, sortField, sortDirection, selectedCategory]);
 
   const handleSort = (field: string) => {
@@ -206,7 +208,7 @@ export default function ProductManagement() {
     toast.success("Đã tải ảnh lên, sẵn sàng để lưu.");
   };
 
-  if (loading && allCategories.length === 0) return <div>Đang tải dữ liệu...</div>;
+  if (loading) return <div>Đang tải dữ liệu...</div>;
   
   const ProductFormFields = () => (
     <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
@@ -239,10 +241,7 @@ export default function ProductManagement() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Quản lý sản phẩm</h1>
-          <p className="text-muted-foreground">Quản lý danh sách sách và sản phẩm trong cửa hàng</p>
-        </div>
+        <div><h1 className="text-2xl font-bold text-foreground">Quản lý sản phẩm</h1><p className="text-muted-foreground">Quản lý danh sách sách và sản phẩm trong cửa hàng</p></div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild><Button className="bg-gradient-primary text-primary-foreground hover:opacity-90"><Plus className="h-4 w-4 mr-2" />Thêm sản phẩm</Button></DialogTrigger>
           <DialogContent className="max-w-3xl">
@@ -256,12 +255,7 @@ export default function ProductManagement() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Tìm kiếm sản phẩm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
-              </div>
-            </div>
+            <div className="flex-1"><div className="relative"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Tìm kiếm sản phẩm..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div></div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="h-4 w-4 mr-2" />

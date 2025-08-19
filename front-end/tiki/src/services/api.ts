@@ -14,9 +14,18 @@ export type Query = {
   [key: string]: any;
 };
 
-const buildQuery = (q?: Query) =>
-  q ? `?${new URLSearchParams(Object.fromEntries(Object.entries(q).map(([k, v]) => [k, String(v)])))}` : "";
+const buildQuery = (q?: Query) => {
+  if (!q) return "";
+  
+  // Lọc ra các entry có giá trị hợp lệ (không phải null, undefined, hoặc chuỗi rỗng)
+  const validEntries = Object.entries(q).filter(([, value]) => value != null && value !== '');
+  
+  if (validEntries.length === 0) return "";
 
+  // Chỉ tạo query string từ các entry hợp lệ
+  const params = new URLSearchParams(Object.fromEntries(validEntries.map(([k, v]) => [k, String(v)])));
+  return `?${params.toString()}`;
+};
 async function api<T>(path: string, init?: RequestInit, token?: string): Promise<{ data: T; headers: Headers }>{
   const res = await fetch(API_URL + path, {
     ...init,

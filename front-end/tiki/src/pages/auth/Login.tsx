@@ -8,10 +8,10 @@ import { Link, useLocation } from "react-router-dom";
 import { KeyRound, Loader2 } from 'lucide-react';
 
 // Import các component UI mới
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/component/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/component/ui/card";
+import { Input } from "@/component/ui/input";
+import { Label } from "@/component/ui/label";
 
 interface LoginForm {
   email: string;

@@ -11,9 +11,9 @@ import {
   ArrowUpRight,
   TrendingUp,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/component/ui/card';
+import { Button } from '@/component/ui/button';
+import { Progress } from '@/component/ui/progress';
 import { Link, useNavigate } from 'react-router-dom';
 
 // Import các hàm API

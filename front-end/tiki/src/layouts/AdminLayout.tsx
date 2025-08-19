@@ -13,7 +13,7 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/component/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext'; 
 
