@@ -1,6 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getNames } from "country-list";
+
+// Local interface for the order item display
+interface DisplayOrderItem {
+  id?: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  book?: any;
+}
+
+// Local interface for the order display
+interface DisplayOrder {
+  id: string;
+  date: string;
+  status: string;
+  total: number;
+  items: DisplayOrderItem[];
+  createdAt?: string;
+  totalPrice?: number;
+  userId?: string | number;
+  user?: any;
+  shippingAddress?: string;
+  paymentMethod?: string;
+}
+
 import {
   FiUser,
   FiBell,
@@ -22,8 +48,30 @@ import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 import Header from "../component/Header";
 import Footer from "../component/Footer";
-import { updateUser, getCurrentUser } from "../services/api";
+import { updateUser, getCurrentUser, getOrders } from "../services/api";
 import type { User } from "../interface/user.interface";
+import { OrderStatus } from "../interface/order.interface";
+
+// Helper function to get status text in Vietnamese
+const getStatusText = (status: string | null): string => {
+  switch (status) {
+    case 'pending':
+      return 'Chờ xác nhận';
+    case 'confirmed':
+      return 'Đã xác nhận';
+    case 'shipping':
+    case 'out_for_delivery':
+      return 'Đang giao hàng';
+    case 'delivered':
+      return 'Đã giao hàng';
+    case 'cancelled':
+      return 'Đã hủy';
+    case 'failed':
+      return 'Giao hàng thất bại';
+    default:
+      return status || '';
+  }
+};
 
 // Interface for the decoded token payload
 interface DecodedToken {
@@ -37,9 +85,88 @@ interface DecodedToken {
 
 const Profile = () => {
   const [selectedTab, setSelectedTab] = useState("profile");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string | null>(
+    null
+  );
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [orders, setOrders] = useState<DisplayOrder[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Handle search functionality
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    
+    const filtered = orders.filter(order => {
+      // Search by order ID
+      if (order.id.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return true;
+      }
+      
+      // Search by product name in order items
+      if (order.items?.some(item => 
+        item.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    return filtered;
+  };
+  
+  // Get filtered orders based on status and search query
+  const getFilteredOrders = () => {
+    let result = [...orders];
+    
+    // Apply status filter
+    if (orderStatusFilter) {
+      result = result.filter(order => order.status === orderStatusFilter);
+    }
+    
+    // Apply search filter if there's a search query
+    if (searchQuery.trim()) {
+      result = handleSearch() || [];
+    }
+    
+    return result;
+  };
+  
+  const filteredOrders = getFilteredOrders();
+
+  // Fetch orders from backend
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setIsLoading(true);
+        const { data } = await getOrders();
+        // Transform the data to match our component's expectations
+        const formattedOrders: DisplayOrder[] = data.map((order: any) => ({
+          ...order,
+          date: order.createdAt,
+          total: order.totalPrice || 0,
+          items: (order.items || []).map((item: any) => ({
+            ...item,
+            name: item.book?.name || 'Sản phẩm không có tên',
+            price: item.book?.list_price || 0,
+            image: item.book?.images?.[0]?.thumbnail_url || 'https://via.placeholder.com/200',
+            quantity: item.quantity || 1
+          }))
+        }));
+        setOrders(formattedOrders);
+      } catch (error) {
+        console.error('Lỗi khi tải đơn hàng:', error);
+        toast.error('Có lỗi xảy ra khi tải đơn hàng');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
   const [editingField, setEditingField] = useState<"phone" | "email" | null>(
     null
   );
@@ -258,7 +385,6 @@ const Profile = () => {
       icon: <FiPackage className="text-xl" />,
       text: "Quản lý đơn hàng",
       value: "orders",
-      link: "/orders",
     },
   ];
 
@@ -306,31 +432,20 @@ const Profile = () => {
               </div>
             </div>
             <div className="space-y-2">
-              {sidebarLinks.map((link) =>
-                link.link ? (
-                  <Link
-                    key={link.value}
-                    to={link.link}
-                    className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 text-gray-600"
-                  >
-                    {link.icon}
-                    <span className="text-sm">{link.text}</span>
-                  </Link>
-                ) : (
-                  <div
-                    key={link.value}
-                    className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
-                      selectedTab === link.value
-                        ? "text-[#0d5cb6] bg-gray-100"
-                        : "text-gray-600"
-                    }`}
-                    onClick={() => setSelectedTab(link.value)}
-                  >
-                    {link.icon}
-                    <span className="text-sm">{link.text}</span>
-                  </div>
-                )
-              )}
+              {sidebarLinks.map((link) => (
+                <div
+                  key={link.value}
+                  className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
+                    selectedTab === link.value
+                      ? "text-[#0d5cb6] bg-gray-100"
+                      : "text-gray-600"
+                  }`}
+                  onClick={() => setSelectedTab(link.value)}
+                >
+                  {link.icon}
+                  <span className="text-sm">{link.text}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -365,9 +480,15 @@ const Profile = () => {
                     </div>
 
                     {/* Labels */}
-                    <label className="text-sm text-gray-600 !ml-4">Ngày sinh</label>
-                    <label className="text-sm text-gray-600 !mt-10 !ml-4">Giới tính</label>
-                    <label className="text-sm text-gray-600 !mt-10 !ml-4">Quốc tịch</label>
+                    <label className="text-sm text-gray-600 !ml-4">
+                      Ngày sinh
+                    </label>
+                    <label className="text-sm text-gray-600 !mt-10 !ml-4">
+                      Giới tính
+                    </label>
+                    <label className="text-sm text-gray-600 !mt-10 !ml-4">
+                      Quốc tịch
+                    </label>
                   </div>
 
                   {/* Middle Column (all inputs) */}
@@ -613,6 +734,248 @@ const Profile = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+          {selectedTab === "orders" && (
+            <div className="flex-1">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-xl font-semibold">Đơn hàng của tôi</h1>
+              </div>
+
+              {/* Order Status Tabs */}
+              <div className="bg-white rounded overflow-hidden mb-6 border-b">
+                <div className="grid grid-cols-6">
+                  <button
+                    onClick={() => setOrderStatusFilter(null)}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === null
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Tất cả đơn
+                  </button>
+                  <button
+                    onClick={() => setOrderStatusFilter("pending")}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === "pending"
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Chờ xác nhận
+                  </button>
+                  <button
+                    onClick={() => setOrderStatusFilter("confirmed")}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === "confirmed"
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Đã xác nhận
+                  </button>
+                  <button
+                    onClick={() => setOrderStatusFilter("shipping")}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === "shipping"
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Đang giao hàng
+                  </button>
+                  <button
+                    onClick={() => setOrderStatusFilter("delivered")}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === "delivered"
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Đã giao
+                  </button>
+                  <button
+                    onClick={() => setOrderStatusFilter("cancelled")}
+                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                      orderStatusFilter === "cancelled"
+                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    Đã hủy
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative my-4">
+                <div className="relative flex">
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm đơn hàng..."
+                    className="w-full pl-10 pr-24 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <svg
+                    className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <button
+                    className="absolute right-0 h-full px-4 text-[#1877f2] divide-x border-l focus:outline-none focus:ring-offset-1"
+                    onClick={() => {
+                      // Trigger search when the button is clicked
+                      getFilteredOrders();
+                    }}
+                    onKeyDown={(e) => {
+                      // Trigger search on Enter key
+                      if (e.key === 'Enter') {
+                        getFilteredOrders();
+                      }
+                    }}
+                  >
+                    Tìm kiếm đơn
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm">
+                {filteredOrders.length === 0 ? (
+                  <div className="text-center py-16">
+                    <FiPackage className="mx-auto text-5xl text-gray-300 mb-4" />
+                    <p className="text-gray-600 text-lg mb-6">
+                      Bạn chưa có đơn hàng nào
+                    </p>
+                  
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredOrders.map((order) => (
+                        <div key={order.id} className="p-5 hover:bg-gray-50">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">
+                                Mã đơn hàng:{" "}
+                                <span className="text-gray-900 font-medium">
+                                  {order.id}
+                                </span>
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Ngày đặt:{" "}
+                                <span className="text-gray-900">
+                                  {order.date || order.createdAt}
+                                </span>
+                              </p>
+                            </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                order.status === "delivered"
+                                  ? "bg-green-100 text-green-800"
+                                  : order.status === "shipping" ||
+                                    order.status === "out_for_delivery"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : order.status === "cancelled" ||
+                                    order.status === "failed"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {getStatusText(order.status)}
+                            </span>
+                          </div>
+
+                          <div className="border rounded-md divide-y">
+                            {order.items?.map((item, index) => (
+                              <div
+                                key={index}
+                                className="p-4 flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                    {item.image ? (
+                                      <img
+                                        src={item.image}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                        <FiPackage className="text-gray-300 text-2xl" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900 line-clamp-2">
+                                      {item.name}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      Số lượng: {item.quantity}
+                                    </p>
+                                    <p className="text-red-600 font-medium mt-1">
+                                      {new Intl.NumberFormat("vi-VN", {
+                                        style: "currency",
+                                        currency: "VND",
+                                      }).format(
+                                        item.price * (item.quantity || 1)
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                            <div className="text-sm">
+                              <span className="text-gray-500">
+                                Thành tiền:{" "}
+                              </span>
+                              <span className="text-red-600 font-medium text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(order.total || order.totalPrice || 0)}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50">
+                                Xem chi tiết
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    {filteredOrders.length === 0 && (
+                      <div className="text-center py-16">
+                        <FiPackage className="mx-auto text-5xl text-gray-300 mb-4" />
+                        <p className="text-gray-600 text-lg mb-6">
+                          {searchQuery.trim()
+                            ? 'Không tìm thấy đơn hàng phù hợp'
+                            : orderStatusFilter
+                              ? `Không có đơn hàng nào ${getStatusText(orderStatusFilter).toLowerCase()}`
+                              : 'Bạn chưa có đơn hàng nào'}
+                        </p>
+                        {!orderStatusFilter && (
+                          <Link
+                            to="/"
+                            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            MUA SẮM NGAY
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
