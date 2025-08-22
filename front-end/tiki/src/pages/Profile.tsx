@@ -51,6 +51,7 @@ import Footer from "../component/Footer";
 import { updateUser, getCurrentUser, getOrders } from "../services/api";
 import type { User } from "../interface/user.interface";
 import { OrderStatus } from "../interface/order.interface";
+import OrderDetails from "../components/OrderDetails";
 
 // Helper function to get status text in Vietnamese
 const getStatusText = (status: string | null): string => {
@@ -85,9 +86,8 @@ interface DecodedToken {
 
 const Profile = () => {
   const [selectedTab, setSelectedTab] = useState("profile");
-  const [orderStatusFilter, setOrderStatusFilter] = useState<string | null>(
-    null
-  );
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<DisplayOrder | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -739,126 +739,137 @@ const Profile = () => {
           )}
           {selectedTab === "orders" && (
             <div className="flex-1">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-xl font-semibold">Đơn hàng của tôi</h1>
-              </div>
+              {selectedOrder ? (
+                <OrderDetails 
+                  order={selectedOrder} 
+                  onBack={() => setSelectedOrder(null)} 
+                />
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-xl font-semibold">Đơn hàng của tôi</h1>
+                  </div>
 
-              {/* Order Status Tabs */}
-              <div className="bg-white rounded overflow-hidden mb-6 border-b">
-                <div className="grid grid-cols-6">
-                  <button
-                    onClick={() => setOrderStatusFilter(null)}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === null
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Tất cả đơn
-                  </button>
-                  <button
-                    onClick={() => setOrderStatusFilter("pending")}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === "pending"
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Chờ xác nhận
-                  </button>
-                  <button
-                    onClick={() => setOrderStatusFilter("confirmed")}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === "confirmed"
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Đã xác nhận
-                  </button>
-                  <button
-                    onClick={() => setOrderStatusFilter("shipping")}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === "shipping"
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Đang giao hàng
-                  </button>
-                  <button
-                    onClick={() => setOrderStatusFilter("delivered")}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === "delivered"
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Đã giao
-                  </button>
-                  <button
-                    onClick={() => setOrderStatusFilter("cancelled")}
-                    className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                      orderStatusFilter === "cancelled"
-                        ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    }`}
-                  >
-                    Đã hủy
-                  </button>
-                </div>
-              </div>
+                  {/* Order Status Tabs */}
+                  <div className="bg-white rounded overflow-hidden mb-6 border-b">
+                    <div className="grid grid-cols-6">
+                      <button
+                        onClick={() => setOrderStatusFilter(null)}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === null
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Tất cả đơn
+                      </button>
+                      <button
+                        onClick={() => setOrderStatusFilter("pending")}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === "pending"
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Chờ xác nhận
+                      </button>
+                      <button
+                        onClick={() => setOrderStatusFilter("confirmed")}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === "confirmed"
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Đã xác nhận
+                      </button>
+                      <button
+                        onClick={() => setOrderStatusFilter("shipping")}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === "shipping"
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Đang giao hàng
+                      </button>
+                      <button
+                        onClick={() => setOrderStatusFilter("delivered")}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === "delivered"
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Đã giao
+                      </button>
+                      <button
+                        onClick={() => setOrderStatusFilter("cancelled")}
+                        className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
+                          orderStatusFilter === "cancelled"
+                            ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                      >
+                        Đã hủy
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="relative my-4">
-                <div className="relative flex">
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm đơn hàng..."
-                    className="w-full pl-10 pr-24 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <svg
-                    className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <button
-                    className="absolute right-0 h-full px-4 text-[#1877f2] divide-x border-l focus:outline-none focus:ring-offset-1"
-                    onClick={() => {
-                      // Trigger search when the button is clicked
-                      getFilteredOrders();
-                    }}
-                    onKeyDown={(e) => {
-                      // Trigger search on Enter key
-                      if (e.key === 'Enter') {
-                        getFilteredOrders();
-                      }
-                    }}
-                  >
-                    Tìm kiếm đơn
-                  </button>
-                </div>
-              </div>
+                  <div className="relative my-4">
+                    <div className="relative flex">
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm đơn hàng..."
+                        className="w-full pl-10 pr-24 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      <svg
+                        className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <button
+                        className="absolute right-0 h-full px-4 text-[#1877f2] divide-x border-l focus:outline-none focus:ring-offset-1"
+                        onClick={() => {
+                          // Trigger search when the button is clicked
+                          getFilteredOrders();
+                        }}
+                        onKeyDown={(e) => {
+                          // Trigger search on Enter key
+                          if (e.key === 'Enter') {
+                            getFilteredOrders();
+                          }
+                        }}
+                      >
+                        Tìm kiếm đơn
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="bg-white rounded-lg shadow-sm">
-                {filteredOrders.length === 0 ? (
+                  <div className="shadow-sm">
+                    {filteredOrders.length === 0 ? (
                   <div className="text-center py-16">
                     <FiPackage className="mx-auto text-5xl text-gray-300 mb-4" />
                     <p className="text-gray-600 text-lg mb-6">
-                      Bạn chưa có đơn hàng nào
+                      {searchQuery.trim()
+                        ? 'Không tìm thấy đơn hàng phù hợp'
+                        : orderStatusFilter
+                          ? `Không có đơn hàng nào ${getStatusText(orderStatusFilter).toLowerCase()}`
+                          : 'Bạn chưa có đơn hàng nào'}
                     </p>
-                  
+                    
                   </div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="divide-y border bg-white">
                     {filteredOrders.map((order) => (
                         <div key={order.id} className="p-5 hover:bg-gray-50">
                           <div className="flex justify-between items-start mb-4">
@@ -947,36 +958,21 @@ const Profile = () => {
                               </span>
                             </div>
                             <div className="flex gap-2">
-                              <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50">
+                              <button 
+                                onClick={() => setSelectedOrder(order)}
+                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50"
+                              >
                                 Xem chi tiết
                               </button>
                             </div>
                           </div>
                         </div>
                       ))}
-                    {filteredOrders.length === 0 && (
-                      <div className="text-center py-16">
-                        <FiPackage className="mx-auto text-5xl text-gray-300 mb-4" />
-                        <p className="text-gray-600 text-lg mb-6">
-                          {searchQuery.trim()
-                            ? 'Không tìm thấy đơn hàng phù hợp'
-                            : orderStatusFilter
-                              ? `Không có đơn hàng nào ${getStatusText(orderStatusFilter).toLowerCase()}`
-                              : 'Bạn chưa có đơn hàng nào'}
-                        </p>
-                        {!orderStatusFilter && (
-                          <Link
-                            to="/"
-                            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            MUA SẮM NGAY
-                          </Link>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
+                </>
+              )}
             </div>
           )}
         </div>
