@@ -1,4 +1,60 @@
-
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 250 100% 99%; /* Màu nền chính, hơi xám trắng */
+    --foreground: 224 71.4% 4.1%; /* Màu chữ chính */
+
+    --card: 0 0% 100%; /* Màu nền của card */
+    --card-foreground: 224 71.4% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+
+    --primary: 246 83% 63%; /* Màu tím/xanh chính */
+    --primary-foreground: 0 0% 100%; /* Màu chữ trên nền primary (màu trắng) */
+
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    
+    --destructive: 0 84.2% 60.2%; /* Màu đỏ cho lỗi/xóa */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142.1 76.2% 36.3%; /* Màu xanh lá cho thành công */
+    --success-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 246 83% 63%;
+
+    --radius: 0.75rem; /* Bo góc */
+
+    /* === ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT CHO CÁI NÚT CỦA BẠN === */
+    --gradient-primary: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(262 83% 68%) 100%);
+    --gradient-card: hsl(var(--card)); /* Sửa lại để card có màu nền trắng trơn */
+  }
+
+  /* Cấu hình cho dark mode (nếu cần) */
+  .dark {
+    /* ... */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

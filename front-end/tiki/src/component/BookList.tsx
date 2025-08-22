@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router';
 import type { Books } from '../interface/book.interface';
 import Header from './Header';
 import Footer from './Footer';
-import { useCart } from '../context/CartContext';
-import SkeletonCard from './SkeletonCard'; // Import SkeletonCard
-import StarRating from './StarRating'; // Import StarRating
+import SkeletonCard from './SkeletonCard';
+import StarRating from './StarRating';
+import Banner from './Banner';
 
-const API_URL = 'http://localhost:3000/books'; 
+const baseUrl = 'http://localhost:3000';
+const API_URL = baseUrl + '/books';
 
 const HomeComponent = () => {
-  const { addToCart } = useCart();
   const [books, setBooks] = useState<Books[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -24,18 +24,13 @@ const HomeComponent = () => {
     setLoading(true);
     fetch(API_URL)
       .then((res) => res.json())
-      .then((data) => {
-        setBooks(data);
-      })
-      .catch(error => console.error('Failed to fetch books:', error))
+      .then((data) => setBooks(data))
+      .catch((error) => console.error('Failed to fetch books:', error))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setScreenSize(window.innerWidth);
-    };
-
+    const handleResize = () => setScreenSize(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -43,7 +38,7 @@ const HomeComponent = () => {
   // Get unique categories
   const categories = useMemo(() => {
     const uniqueCategories = new Map();
-    books.forEach(book => {
+    books.forEach((book) => {
       if (book.categories) {
         uniqueCategories.set(book.categories.id, book.categories.name);
       }
@@ -53,19 +48,19 @@ const HomeComponent = () => {
 
   // Filter and sort books
   const filteredAndSortedBooks = useMemo(() => {
-    let filtered = books.filter(book => {
-      const matchesSearch = searchTerm === '' || 
+    let filtered = books.filter((book) => {
+      const matchesSearch =
+        searchTerm === '' ||
         book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (book.short_description && book.short_description.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (book.description && book.description.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === '' || 
-        (book.categories && book.categories.id.toString() === selectedCategory);
-      
+
+      const matchesCategory =
+        selectedCategory === '' || (book.categories && book.categories.id.toString() === selectedCategory);
+
       return matchesSearch && matchesCategory;
     });
 
-    // Sort books
     filtered.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
@@ -93,13 +88,9 @@ const HomeComponent = () => {
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       } else {
-        return sortOrder === 'asc' 
-          ? (aValue as number) - (bValue as number)
-          : (bValue as number) - (aValue as number);
+        return sortOrder === 'asc' ? (aValue as number) - (bValue as number) : (bValue as number) - (aValue as number);
       }
     });
 
@@ -107,12 +98,17 @@ const HomeComponent = () => {
   }, [books, searchTerm, selectedCategory, sortBy, sortOrder]);
 
   // Determine grid columns based on screen size
-  const getProductColumns = () => 4;
+  const getProductColumns = () => {
+    if (screenSize >= 1280) return 4;
+    if (screenSize >= 1024) return 3;
+    if (screenSize >= 768) return 2;
+    return 1;
+  };
 
   // Layout styles
   const mainContainerStyles: React.CSSProperties = {
     minHeight: '100vh',
-    backgroundColor: '#f9fafb'
+    backgroundColor: '#f9fafb',
   };
 
   const contentStyles: React.CSSProperties = {
@@ -120,74 +116,47 @@ const HomeComponent = () => {
     margin: '0 auto',
     padding: screenSize >= 768 ? '0 2.5rem' : '0 1rem',
     paddingTop: '1.5rem',
-    paddingBottom: '1.5rem'
+    paddingBottom: '1.5rem',
   };
 
   const layoutStyles: React.CSSProperties = {
     display: 'flex',
     gap: '1.5rem',
-    flexDirection: screenSize >= 768 ? 'row' : 'column'
+    flexDirection: screenSize >= 768 ? 'row' : 'column',
   };
 
   const sidebarStyles: React.CSSProperties = {
     width: screenSize >= 768 ? '240px' : '100%',
-    flexShrink: 0
+    flexShrink: 0,
   };
 
   const productGridContainerStyles: React.CSSProperties = {
     flex: 1,
-    minWidth: 0
+    minWidth: 0,
   };
 
   const productGridStyles: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
     gap: '1rem',
-    width: '100%'
+    width: '100%',
   };
 
   const skeletonGridStyles: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: `repeat(${getProductColumns()}, 1fr)`,
-    gap: '1rem'
+    gap: '1rem',
   };
 
   return (
     <div style={mainContainerStyles}>
       <Header />
-      
       {/* Main Content */}
       <div style={contentStyles}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Sách</h1>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-500">Sắp xếp:</span>
-            <div className="relative">
-              <select
-                value={`${sortBy}-${sortOrder}`}
-                onChange={(e) => {
-                  const [selectedSortBy, selectedSortOrder] = e.target.value.split('-') as ['name' | 'rating' | 'sold' | 'price', 'asc' | 'desc'];
-                  setSortBy(selectedSortBy);
-                  setSortOrder(selectedSortOrder);
-                }}
-                className="appearance-none bg-white border border-gray-300 rounded-full pl-2 pr-2 py-2 text-xs font-medium text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors duration-200"
-              >
-                <option value="sold-desc">Bán chạy nhất</option>
-                <option value="rating-desc">Đánh giá cao nhất</option>
-                <option value="price-asc">Giá: Thấp đến cao</option>
-                <option value="price-desc">Giá: Cao đến thấp</option>
-                <option value="name-asc">Tên: A đến Z</option>
-                <option value="name-desc">Tên: Z đến A</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
         </div>
-        
+
         <div style={layoutStyles}>
           {/* Sidebar */}
           <div style={sidebarStyles}>
@@ -204,9 +173,7 @@ const HomeComponent = () => {
                       : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 hover:font-medium'
                   }`}
                 >
-                  <span className="flex items-center">
-                    Tất cả sản phẩm
-                  </span>
+                  <span className="flex items-center">Tất cả sản phẩm</span>
                 </button>
                 {categories.map((category) => (
                   <button
@@ -218,9 +185,7 @@ const HomeComponent = () => {
                         : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600 hover:font-medium'
                     }`}
                   >
-                    <span className="flex items-center">
-                      {category.name}
-                    </span>
+                    <span className="flex items-center">{category.name}</span>
                   </button>
                 ))}
               </div>
@@ -229,6 +194,70 @@ const HomeComponent = () => {
 
           {/* Product Grid Container */}
           <div style={productGridContainerStyles}>
+            <Banner />
+
+            {/* Filter options */}
+            <div className="mb-4 bg-white p-4 rounded-lg shadow-sm">
+              <h2 className="text-lg font-medium mb-3">Tất cả sản phẩm</h2>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
+                  <img src="/iconnow.png" alt="Now" className="h-4" />
+                  <span className="text-xs">Giao siêu tốc 2H</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
+                  <span className="text-[10px] text-red-500 font-medium">TOP DEAL</span>
+                  <span className="text-xs">Siêu rẻ</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
+                  <span className="text-[10px] text-blue-600 font-medium">FREESHIP</span>
+                  <span className="text-xs">XTRA</span>
+                </div>
+                <div className="flex items-center gap-1 bg-white px-3 py-2 rounded border border-gray-200">
+                  <span className="text-xs text-yellow-400">★★★★★</span>
+                  <span className="text-xs">từ 4 sao</span>
+                </div>
+              </div>
+              {/* Sort options */}
+            <div className="flex items-center justify-between my-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Sắp xếp theo</span>
+                <div className="relative">
+                  <select
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [selectedSortBy, selectedSortOrder] = e.target.value.split('-') as [
+                        'name' | 'rating' | 'sold' | 'price',
+                        'asc' | 'desc'
+                      ];
+                      setSortBy(selectedSortBy);
+                      setSortOrder(selectedSortOrder);
+                    }}
+                    className="appearance-none bg-white border border-gray-300 rounded-full pl-3 pr-8 py-2 text-xs font-medium text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors duration-200"
+                  >
+                    <option value="sold-desc">Bán chạy nhất</option>
+                    <option value="rating-desc">Đánh giá cao nhất</option>
+                    <option value="price-asc">Giá: Thấp đến cao</option>
+                    <option value="price-desc">Giá: Cao đến thấp</option>
+                    <option value="name-asc">Tên: A đến Z</option>
+                    <option value="name-desc">Tên: Z đến A</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            
+
+            {/* Product Grid */}
             {loading ? (
               <div style={skeletonGridStyles}>
                 {Array.from({ length: 8 }).map((_, index) => (
@@ -245,14 +274,33 @@ const HomeComponent = () => {
                       onClick={() => navigate(`/books/${book.id}`)}
                       tabIndex={0}
                       role="button"
-                      onKeyDown={e => { if (e.key === 'Enter') navigate(`/book/${book.id}`); }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') navigate(`/books/${book.id}`);
+                      }}
                     >
                       {/* Image Container */}
-                      <div style={{ position: 'relative', paddingTop: '100%', overflow: 'hidden', backgroundColor: '#f9fafb', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
+                      <div
+                        style={{
+                          position: 'relative',
+                          paddingTop: '100%',
+                          overflow: 'hidden',
+                          backgroundColor: '#f9fafb',
+                          borderTopLeftRadius: '0.5rem',
+                          borderTopRightRadius: '0.5rem',
+                        }}
+                      >
                         <img
-                          src={book.images[0].small_url}
+                          src={book.images?.[0]?.small_url || '/placeholder-book.jpg'}
                           alt={book.name}
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transition: 'transform 0.3s ease',
+                          }}
                         />
                       </div>
 
@@ -270,17 +318,7 @@ const HomeComponent = () => {
                           <span>Đã bán {book.quantity_sold?.value || 0}</span>
                         </div>
 
-                        {/* Price */}
-                        {(() => {
-                          const salePrice = book.current_seller?.price ?? book.list_price;
-                          console.log('Book price info:', {
-                            name: book.name,
-                            original_price: book.original_price,
-                            sale_price: salePrice,
-                            percent_discount: book.original_price > salePrice ? Math.round(((book.original_price - salePrice) / book.original_price) * 100) : 0
-                          });
-                          return null;
-                        })()}
+                        
                         <div className="flex items-baseline gap-2 mb-2">
                           {book.original_price > (book.current_seller?.price ?? book.list_price) ? (
                             <>
@@ -290,7 +328,6 @@ const HomeComponent = () => {
                               <span className="text-xs text-black bg-gray-200 font-semibold px-1.5 py-0.5 rounded ml-1 align-middle">
                                 -{Math.round(((book.original_price - (book.current_seller?.price ?? book.list_price)) / book.original_price) * 100)}%
                               </span>
-                              
                             </>
                           ) : (
                             <span className="text-base font-bold text-red-500">
@@ -299,37 +336,11 @@ const HomeComponent = () => {
                           )}
                         </div>
 
-                         {/* Shipping */}
-                         <div className="text-xs text-gray-700 flex items-center gap-1 mb-2">
-                           <img src="/iconnow.png" alt="Now Ship" style={{ height: '1rem' }} />
-                           <span>Giao siêu tốc 2h</span>
-                         </div>
-CartPage
-                         {/* Add to Cart Button */}
-                         <button
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             addToCart({
-                               bookId: book.id,
-                               name: book.name,
-                               price: book.current_seller?.price || book.list_price,
-                               originalPrice: book.original_price,
-                               quantity: 1,
-                               image: book.images[0]?.large_url || book.images[0]?.base_url || '',
-                               seller: {
-                                 id: book.current_seller?.id || 0,
-                                 name: book.current_seller?.name || 'Tiki Trading',
-                                 logo: book.current_seller?.logo
-                               }
-                             });
-                           }}
-                           className="w-full bg-blue-600 text-white py-2 px-3 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                         >
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                           </svg>
-                           Thêm vào giỏ
-                         </button>
+                        {/* Shipping */}
+                        <div className="text-xs text-gray-700 flex items-center gap-1">
+                          <img src="/iconnow.png" alt="Now Ship" style={{ height: '1rem' }} />
+                          <span>Giao siêu tốc 2h</span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -341,10 +352,9 @@ CartPage
                     <div className="text-gray-300 text-8xl mb-6">📚</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
                     <p className="text-gray-500 max-w-md mx-auto">
-                      {searchTerm 
+                      {searchTerm
                         ? `Không có sản phẩm nào phù hợp với "${searchTerm}". Hãy thử từ khóa khác hoặc xóa bộ lọc.`
-                        : 'Không có sản phẩm nào trong danh mục này. Hãy thử danh mục khác.'
-                      }
+                        : 'Không có sản phẩm nào trong danh mục này. Hãy thử danh mục khác.'}
                     </p>
                     {(searchTerm || selectedCategory) && (
                       <button

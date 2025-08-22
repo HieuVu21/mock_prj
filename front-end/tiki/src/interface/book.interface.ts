@@ -1,23 +1,55 @@
+// src/interface/book.interface.ts
+export interface Author {
+  id: number;
+  name: string;
+  slug: string;
+}
+export interface Image {
+  base_url: string;
+  is_gallery?: boolean;
+  label?: string | null;
+  large_url?: string;
+  medium_url?: string;
+  position?: number | null;
+  small_url?: string;
+  thumbnail_url: string;
+}
+
+export interface Seller {
+  id: number;
+  sku: string;
+  name: string;
+  link: string;
+  logo: string;
+  price: number;
+  product_id: string;
+  store_id: number;
+}
+
+export interface Attribute {
+  code: string;
+  name: string;
+  value: string;
+}
+
+export interface Specification {
+  name: string;
+  attributes: Attribute[];
+}
+
+// Interface chính cho một cuốn sách, dựa trên dữ liệu thật
 export interface Books {
   id: string;
   name: string;
-  book_cover: string | null;
-  images: Array<{
-    base_url: string;
-    is_gallery: boolean;
-    label: string | null;
-    large_url: string;
-    medium_url: string;
-    position: number | null;
-    small_url: string;
-    thumbnail_url: string;
-  }>;
+  book_cover?: string | null;
+  images: Image[];
   list_price: number;
   original_price: number;
   description: string;
   short_description: string | null;
   rating_average: number;
-  quantity_sold: {
+  stock_quantity?: number;
+  quantity_sold?: {
     text: string;
     value: number;
   };
@@ -26,11 +58,7 @@ export interface Books {
     name: string;
     slug: string;
   }>;
-  categories: {
-    id: number;
-    name: string;
-    is_leaf: boolean;
-  };
+  categories: Category,
   current_seller: {
     id: number;
     sku: string;
@@ -65,4 +93,33 @@ export interface Books {
   // Nested publisher information might be in specifications
   publisher_vn?: string;
   manufacturer?: string;
+}
+export interface ProductApiResponse {
+  docs: Books[];
+  totalDocs: number;
+  limit: number;
+  totalPages: number;
+  page: number;
+  pagingCounter: number;
+  hasPrevPage: boolean;
+  hasNextPage: boolean;
+  prevPage: number | null;
+  nextPage: number | null;
+}
+export interface Category {
+  id: number;
+  name: string;
+  is_leaf?: boolean; // Thêm dấu ? để cho biết nó có thể không có
+}
+
+export interface Cart {
+  id: string;
+  userId: string;
+  items: CartItem[];
+}
+
+export interface CartItem extends Books {
+  quantity: number;
+  cartItemId: string; // Unique ID for the item in the cart
+  selected?: boolean; // To manage selection state in the UI
 }

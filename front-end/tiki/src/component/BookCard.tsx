@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Books } from "../interface/book.interface";
+import { useCart } from "../contexts/CartContext";
 import DescriptionComponent from "./DescriptionComponent";
 import StarRating from "./StarRating";
 import Header from './Header';
 import Footer from './Footer';
 import Breadcrumb from './Breadcrumb';
-import { useCart } from '../context/CartContext';
+import { createOrder } from "../services/api";
 
 const BookDetailComponent = () => {
+  const baseUrl = 'https://be-mock-project.vercel.app';
   const { id } = useParams();
   const { addToCart } = useCart();
   const [book, setBook] = useState<Books | null>(null);
@@ -18,45 +20,59 @@ const BookDetailComponent = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+  const [topDealPage, setTopDealPage] = useState(0);
+  const [similarPage, setSimilarPage] = useState(0);
+  const [topDealBooks, setTopDealBooks] = useState<Books[]>([]);
+  const [similarBooks, setSimilarBooks] = useState<Books[]>([]);
   const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const itemsPerPage = 8; // 4 columns x 2 rows
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchBookAndRelated = async () => {
-      if (id) {
-        try {
-          setLoading(true);
-          // Fetch book details
-          const bookResponse = await fetch(`http://localhost:3000/books/${id}`);
-          const bookData = await bookResponse.json();
-          setBook(bookData);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(baseUrl + `/books/${id}`);
+        const data = await response.json();
+        setBook(data);
 
-          // Fetch related books if category is available
-          if (bookData.categories && bookData.categories.id) {
-            const categoryId = bookData.categories.id;
-            // First, get all books in the same category
-            const allBooksResponse = await fetch('http://localhost:3000/books');
-            const allBooks = await allBooksResponse.json();
+        // Fetch all books for related and top deals
+        const allBooksResponse = await fetch(baseUrl+'/books');
+        const allBooks = await allBooksResponse.json();
+        
+        // Filter top deal books (rating > 4)
+        const topDeals = allBooks.filter(
+          (b: Books) => b.rating_average > 4 && b.id !== data.id
+        );
+        setTopDealBooks(topDeals);
 
-            // Filter books in the same category (excluding current book)
-            const related = allBooks.filter((b: Books) =>
-              b.id !== id &&
-              b.categories &&
+        // Fetch similar books from the same category
+        const similar = allBooks.filter(
+          (b: Books) => b.categories.id === data.category_id && b.id !== data.id
+        ).slice(0, 8);
+        setSimilarBooks(similar);
+        
+        // Fetch related books from the same category
+        if (data.categories && data.categories.id) {
+          const categoryId = data.categories.id;
+          const related = allBooks.filter(
+            (b: Books) => 
+              b.id !== data.id && 
+              b.categories && 
               b.categories.id === categoryId
-            );
+          );
 
-            setRelatedBooks(related);
-          }
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        } finally {
-          setLoading(false);
-        }
+          setRelatedBooks(related);
+        } 
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchBookAndRelated();
+    fetchData();
   }, [id]);
 
   useEffect(() => {
@@ -127,19 +143,40 @@ const BookDetailComponent = () => {
     return 'Danh mục';
   };
 
+  const handleBuyNow = () => {
+    if (!book) return;
+    
+    // Create a cart item for the checkout
+    const cartItem = {
+      book: {
+        id: book.id,
+        name: book.name,
+        images: book.images,
+        list_price: book.list_price,
+        original_price: book.original_price,
+        current_seller: book.current_seller,
+        rating_average: book.rating_average,
+        quantity_sold: book.quantity_sold
+      },
+      quantity: quantity
+    };
+    
+    // Navigate to checkout with the item
+    navigate('/checkout', { 
+      state: { 
+        items: [cartItem],
+        fromBuyNow: true
+      } 
+    });
+  };
+
   return (
     <>
       {/* Top Bar with Freeship message */}
-      <div className="bg-blue-50 py-2">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-sm text-green-600">
-            Freeship đơn từ 45k, giảm nhiều hơn cùng <span className="font-bold">FREESHIP XTRA</span>
-          </div>
-        </div>
-      </div>
+    
 
       <Header />
-      <div className=" border-b border-gray-200">
+
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <Breadcrumb
             items={[
@@ -148,10 +185,9 @@ const BookDetailComponent = () => {
               { name: book?.name || 'Sản phẩm' }
             ]}
           />
-        </div>
       </div>
 
-      <div className="p-6 bg-gray-100" style={{ minHeight: '100vh' }}>
+      <div className="p-6 " style={{ minHeight: '100vh' }}>
         <div style={{ maxWidth: '120rem', margin: '0 auto', width: '100%' }}>
           <div style={containerStyles}>
 
@@ -240,40 +276,26 @@ const BookDetailComponent = () => {
               <div style={spaceYStyles}>
                 {/* Book Title Card */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <div className="flex items-center mb-2">
-                    <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
-                    <span className="text-blue-600 font-medium text-sm">
-                      {getAuthorName()}
-                    </span>
-                  </div>
+                <div className="flex items-center mb-2">
+                      <span className="w-12 text-gray-500 text-sm">Tác giả:</span>
+                      <span className="text-blue-600 font-medium text-sm">
+                        {getAuthorName()}
+                      </span>
+                    </div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">{book.name}</h1>
 
                   {/* Rating and Reviews */}
                   <div className="flex items-center">
                     <div className="flex items-center">
                       <div className="flex items-center mr-1">
-                        <StarRating rating={book.rating_average || 0} />
-                        <span className="text-sm text-gray-600 ml-1">
+                        <span className="text-sm text-gray-600 mx-1">
                           {typeof book.rating_average === 'number' ? book.rating_average.toFixed(1) : '0.0'}
                         </span>
+                        <StarRating rating={book.rating_average || 0} />
                       </div>
-                      {book.review_count && (
-                        <>
-                          <span className="mx-1 text-gray-400">•</span>
-                          <span className="text-sm text-blue-600 underline hover:text-blue-800 cursor-pointer">
-                            {book.review_count} đánh giá
-                          </span>
-                        </>
-                      )}
+                      
                     </div>
-                    {(book.quantity_sold?.value > 0) && (
-                      <>
-                        <div className="h-4 w-px bg-gray-300 mx-3"></div>
-                        <div className="text-sm text-gray-500">
-                          Đã bán {book.quantity_sold.value}
-                        </div>
-                      </>
-                    )}
+                    
                   </div>
                   <div className="flex items-end">
                     {(() => {
@@ -306,14 +328,14 @@ const BookDetailComponent = () => {
                     <div className="space-y-6">
                       {book.specifications.map((spec, specIndex) => (
                         <div key={specIndex}>
-                          <h2 className="text-base font-medium text-gray-800 mb-3">{spec.name}</h2>
-                          <div className="border border-gray-200 rounded">
+                          <h2 className="text-base font-medium text-black mb-3">{spec.name}</h2>
+                          
                             {spec.attributes.map((attr, attrIndex) => (
-                              <div
-                                key={attrIndex}
-                                className={`flex ${attrIndex < spec.attributes.length - 1 ? 'border-b border-gray-200' : ''} ${attrIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                              >
-                                <div className="w-1/3 py-3 px-4 text-sm text-gray-500 font-medium">
+                              <div key={attrIndex} className="flex relative bg-white">
+                                {attrIndex < spec.attributes.length - 1 && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200"></div>
+                                )}
+                                <div className="w-1/3 py-3 px-4 text-sm text-gray-400 font-medium">
                                   {attr.name}
                                 </div>
                                 <div className="w-2/3 py-3 px-4 text-sm text-gray-900">
@@ -322,7 +344,7 @@ const BookDetailComponent = () => {
                               </div>
                             ))}
                           </div>
-                        </div>
+                      
                       ))}
                     </div>
                   </div>
@@ -340,21 +362,26 @@ const BookDetailComponent = () => {
                       )}
                     </div>
                     {book.description && book.description.length > 200 && (
-                      <div className="mt-2 text-right">
-                        <button
-                          onClick={() => setShowFullDescription(!showFullDescription)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none"
-                        >
-                          {showFullDescription ? (
-                            <span className="flex items-center justify-end">
-                              Thu gọn <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                            </span>
-                          ) : (
-                            <span className="flex items-center justify-end">
-                              Xem thêm <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </span>
-                          )}
-                        </button>
+                      <div className="relative mt-2">
+                        {!showFullDescription && (
+                          <div className="absolute bottom-full left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                        )}
+                        <div className="text-center">
+                          <button
+                            onClick={() => setShowFullDescription(!showFullDescription)}
+                            className="relative z-10 bg-white text-blue-600 hover:text-blue-800 text-sm font-medium focus:outline-none px-4 py-1 rounded-full shadow-sm"
+                          >
+                            {showFullDescription ? (
+                              <span className="flex items-center justify-center">
+                                Thu gọn
+                              </span>
+                            ) : (
+                              <span className="flex items-center justify-center">
+                                Xem thêm
+                              </span>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -447,10 +474,153 @@ const BookDetailComponent = () => {
                             </button>
                           )}
                         </div>
+                        <div className="flex justify-center items-center space-x-1 px-2 mt-2">
+                                {Array.from({ length: Math.ceil(relatedBooks.length / 4) }, (_, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i)}
+                                    className={`w-8 h-1 rounded-full ${currentPage === i ? 'bg-blue-600' : 'bg-gray-300'}`}
+                                    aria-label={`Page ${i + 1}`}
+                                  />
+                                ))}
+                              </div>
                       </div>
                     </div>
                   )}
+                  {/* Top Deal Section */}
+                  {topDealBooks.length > 0 && (
+                    <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
+                      <div className="relative">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Top Deals</h3>
+                        <div className="relative">
+                          <div className="grid grid-cols-4 gap-2">
+                            {topDealBooks.slice(topDealPage * 4, (topDealPage * 4) + 4).map((book) => (
+                              <Link
+                                key={book.id}
+                                to={`/books/${book.id}`}
+                                className="flex flex-col hover:shadow-sm transition-shadow rounded overflow-hidden bg-white border border-gray-100"
+                              >
+                                <div className="relative pt-[140%]">
+                                  <img
+                                    src={book.images?.[0]?.base_url || 'https://via.placeholder.com/100x140'}
+                                    alt={book.name}
+                                    className="absolute top-0 left-0 w-full h-full object-cover p-1"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <div className="p-2 flex-1 flex flex-col">
+                                  <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                                    {book.name}
+                                  </h3>
+                                  <div className="mt-auto">
+                                    <div className="flex flex-col">
+                                      <span className="text-red-600 font-semibold text-xs">
+                                        {book.current_seller?.price ? formatPrice(book.current_seller.price) : 'Liên hệ'}
+                                      </span>
+                                      
+                                    </div>
+                                    <div className="flex items-center mt-1">
+                                      <StarRating rating={book.rating_average || 0} />
+                                    </div>
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                          
+                          {/* Navigation Arrows */}
+                          {topDealPage > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setTopDealPage(prev => Math.max(0, prev - 1));
+                              }}
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {(topDealPage + 1) * 4 < topDealBooks.length && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setTopDealPage(prev => Math.min(Math.ceil(topDealBooks.length / 4) - 1, prev + 1));
+                              }}
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Pagination Dots */}
+                        <div className="flex justify-center items-center space-x-1 px-2 mt-4">
+                          {Array.from({ length: Math.ceil(topDealBooks.length / 4) }, (_, i) => (
+                            <button
+                              key={i}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setTopDealPage(i);
+                              }}
+                              className={`w-8 h-1 rounded-full ${topDealPage === i ? 'bg-blue-600' : 'bg-gray-300'}`}
+                              aria-label={`Page ${i + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-center mb-3">
+                      <h2 className="text-base font-medium">An tâm mua sắm</h2>
+                      <img 
+                        src="/ic_right.png" 
+                        alt="Xem thêm" 
+                        className="w-4 h-4 opacity-50 hover:opacity-100 cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-3 text-sm text-gray-700">
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 mr-2 flex-shrink-0 flex items-center justify-center">
+                          <img 
+                            src="/ic_dongkiem.png" 
+                            alt="Đồng kiểm" 
+                            className="w-4 h-4 object-contain"
+                          />
+                        </div>
+                        <span>Được đồng kiểm khi nhận hàng</span>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 mr-2 flex-shrink-0 flex items-center justify-center">
+                          <img 
+                            src="/ic_hoantien.png" 
+                            alt="Hoàn trả" 
+                            className="w-4 h-4 object-contain"
+                          />
+                        </div>
+                        <span>Được hoàn tiền 200% nếu là hàng giả</span>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 mr-2 flex-shrink-0 flex items-center justify-center">
+                          <img 
+                            src="/ic_doitra.png" 
+                            alt="Đổi trả" 
+                            className="w-4 h-4 object-contain"
+                          />
+                        </div>
+                        <span>Đổi trả miễn phí trong 30 ngày. Được đổi ý.</span>
+                      </div>
+                    </div>
+                    <a href="#" className="text-blue-500 text-sm hover:underline mt-3 inline-block font-medium">Chi tiết</a>
+                  </div>
                 </div>
+                
               </div>
             </div>
 
@@ -487,12 +657,7 @@ const BookDetailComponent = () => {
                             Chính hãng
                           </span>
                         )}
-                        <div className="flex items-center text-xs text-blue-600">
-                          <svg className="w-3.5 h-3.5 text-blue-600 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          OFFICIAL
-                        </div>
+                        <img src="/tick_official.png" alt="Official" className="w-12 h-4 ml-1 mt-1" />
                       </div>
                     </div>
                   </div>
@@ -501,25 +666,23 @@ const BookDetailComponent = () => {
                 {/* Quantity Selector */}
                 <div className="mb-4">
                   <div className="text-xl text-gray-700 mb-2">Số lượng</div>
-                  <div className="flex items-center mb-2">
-                    <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                      <button
-                        className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
-                        onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                        disabled={quantity <= 1}
-                      >
-                        -
-                      </button>
-                      <span className="px-4 py-1 border-l border-r border-gray-300 text-center w-12">
-                        {quantity}
-                      </span>
-                      <button
-                        className="px-3 py-1 text-lg font-medium hover:bg-gray-50 text-gray-600"
-                        onClick={() => setQuantity(prev => prev + 1)}
-                      >
-                        +
-                      </button>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <button
+                      className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <div className="w-12 h-10 flex items-center justify-center border border-gray-300 rounded-md text-center text-lg">
+                      {quantity}
                     </div>
+                    <button
+                      className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 text-lg font-medium"
+                      onClick={() => setQuantity(prev => prev + 1)}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -537,63 +700,23 @@ const BookDetailComponent = () => {
 
                 {/* Action Buttons */}
                 <div className="mb-4">
-                  <button
-                    className="w-full py-2.5 rounded-md font-medium text-white flex items-center justify-center bg-red-600 hover:bg-red-700 transition-colors mb-2"
+                  <button 
+                    onClick={handleBuyNow}
+                    className="w-full py-1.5 rounded-md font-medium text-white flex items-center justify-center bg-red-600 hover:bg-red-700 transition-colors mb-2"
                   >
-                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
                     Mua ngay
                   </button>
-                  <button
-                    onClick={() => {
-                      if (book) {
-                        addToCart({
-                          bookId: book.id,
-                          name: book.name,
-                          price: book.current_seller?.price || book.list_price,
-                          originalPrice: book.original_price,
-                          quantity: quantity,
-                          image: book.images[0]?.large_url || book.images[0]?.base_url || '',
-                          seller: {
-                            id: book.current_seller?.id || 0,
-                            name: book.current_seller?.name || 'Tiki Trading',
-                            logo: book.current_seller?.logo
-                          }
-                        });
-                      }
-                    }}
-                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
+                  <button 
+                    onClick={() => book && addToCart(book, quantity)}
+                    className="w-full py-1.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
                   >
-                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
                     Thêm vào giỏ
                   </button>
-                  <button
-                    className="w-full py-2.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors mb-2"
+                  <button 
+                    className="w-full py-1.5 rounded-md font-medium flex items-center justify-center border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
                   >
-                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
                     Mua trước trả sau
                   </button>
-                </div>
-
-                {/* Shipping Info */}
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex items-center text-sm text-gray-600 mb-2">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-14 0a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2" />
-                    </svg>
-                    Giao hàng miễn phí từ 45k
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Giao trong 2-4 giờ
-                  </div>
                 </div>
               </div>
             </div>
