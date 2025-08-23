@@ -1,6 +1,6 @@
 // src/pages/admin/Dashboard.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   DollarSign,
   ShoppingBag,
@@ -11,6 +11,17 @@ import {
   ArrowUpRight,
   TrendingUp,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Cell
+} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/component/ui/card';
 import { Button } from '@/component/ui/button';
 import { Progress } from '@/component/ui/progress';
@@ -52,8 +63,8 @@ export default function AdminDashboard() {
         // Gọi song song các API để tăng tốc
         const [productsRes, ordersRes, usersRes] = await Promise.all([
           getProducts({ _limit: 1000 }), // Lấy nhiều sản phẩm để tính toán
-          getOrders({ _limit: 100, _sort: 'createdAt', _order: 'desc' }), // Lấy đơn hàng mới nhất
-          getUsers(token)
+          getOrders({ isAdmin: true }), // Lấy tất cả đơn hàng cho admin
+          getUsers()
         ]);
         
         const products = productsRes.data || [];
@@ -66,12 +77,12 @@ export default function AdminDashboard() {
         const totalOrders = orders.length;
         const totalUsers = users.length;
         
-        const recentOrders = orders.slice(0, 3); // Lấy 3 đơn hàng mới nhất
+        const recentOrders = orders.slice(0, 10); // Lấy 3 đơn hàng mới nhất
         
         // Tìm 3 sản phẩm bán chạy nhất (dựa vào quantity_sold)
         const topProducts = [...products]
           .sort((a, b) => (b.quantity_sold?.value ?? 0) - (a.quantity_sold?.value ?? 0))
-          .slice(0, 3);
+          .slice(0, 10);
 
         setStats({
           totalRevenue,
@@ -95,8 +106,52 @@ export default function AdminDashboard() {
   
   // Các hàm tiện ích
   const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-  const getStatusText = (status: string) => { /* giữ nguyên hàm của bạn */ };
-  const getStatusColor = (status: string) => { /* giữ nguyên hàm của bạn */ };
+  
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Chờ xử lý';
+      case 'processing': return 'Đang xử lý';
+      case 'shipped': return 'Đang giao hàng';
+      case 'delivered': return 'Đã giao';
+      case 'cancelled': return 'Đã hủy';
+      default: return status;
+    }
+  };
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // Chuẩn bị dữ liệu cho biểu đồ
+  const chartData = useMemo(() => {
+    if (!stats) return [];
+    
+    // Nhóm đơn hàng theo ngày
+    const ordersByDate = stats.recentOrders.reduce((acc: Record<string, number>, order: any) => {
+      const date = new Date(order.createdAt).toLocaleDateString('vi-VN');
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Chuyển đổi thành mảng dữ liệu cho biểu đồ
+    return Object.entries(ordersByDate).map(([date, count]) => ({
+      date,
+      'Số đơn hàng': count,
+      'Tổng tiền': stats.recentOrders
+        .filter((o: any) => new Date(o.createdAt).toLocaleDateString('vi-VN') === date)
+        .reduce((sum: number, o: any) => sum + (o.totalPrice || 0), 0)
+    }));
+  }, [stats]);
+  
+  // Màu sắc cho biểu đồ
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   if (loading) {
     return <div>Đang tải dữ liệu Dashboard...</div>;
@@ -169,7 +224,77 @@ export default function AdminDashboard() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-             {/* Map qua stats.recentOrders */}
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 0,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => value.split('/').slice(0, 2).join('/')}
+                  />
+                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'Tổng tiền') {
+                        return [formatCurrency(Number(value)), name];
+                      }
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    yAxisId="left" 
+                    dataKey="Số đơn hàng" 
+                    name="Số đơn hàng"
+                    fill="#8884d8"
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                  <Bar 
+                    yAxisId="right" 
+                    dataKey="Tổng tiền" 
+                    name="Tổng tiền (VND)"
+                    fill="#82ca9d"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="space-y-2 mt-4">
+              <h4 className="text-sm font-medium">Đơn hàng gần đây</h4>
+              <div className="space-y-2">
+                {stats.recentOrders.map((order: any) => (
+                  <div key={order.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-muted/50">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">#{order.id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{formatCurrency(order.totalPrice)}</p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
+                        {getStatusText(order.status)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -205,7 +330,7 @@ export default function AdminDashboard() {
           <CardTitle>Thao tác nhanh</CardTitle>
          </CardHeader>
          <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Button onClick={() => navigate('/admin/products/', { state: { openCreateModal: true } })} className="h-24 flex-col space-y-2">
               <Package className="h-6 w-6" /><span>Thêm sản phẩm</span>
             </Button>
@@ -215,9 +340,7 @@ export default function AdminDashboard() {
             <Button onClick={() => navigate('/admin/orders')} variant="outline" className="h-24 flex-col space-y-2">
               <ShoppingBag className="h-6 w-6" /><span>Xử lý đơn hàng</span>
             </Button>
-            <Button variant="outline" className="h-24 flex-col space-y-2">
-              <TrendingUp className="h-6 w-6" /><span>Báo cáo</span>
-            </Button>
+            
           </div>
          </CardContent>
       </Card>
