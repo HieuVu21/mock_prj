@@ -36,17 +36,27 @@ export default function UserManagement() {
   
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     fullName: '',
-    role: 'customer' as UserRole
+    password: '',
+    role: 'customer' as UserRole,
+    phone: '',
+    address: '',
+    gender: '',
+    nationality: ''
   });
   
   const loadUsers = async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const { data } = await getUsers(token);
-      setUsers(data || []);
+      const response = await getUsers();
+      const usersData = Array.isArray(response) ? response : response?.data || [];
+      // Map the response to ensure consistent field names
+      const normalizedUsers = usersData.map(user => ({
+        ...user,
+        fullName: user.fullName || user.fullname || user.name || ''
+      }));
+      setUsers(normalizedUsers);
     } catch {
       toast.error("Tải danh sách người dùng thất bại.");
     } finally {
@@ -83,7 +93,19 @@ export default function UserManagement() {
       return matchesSearch && matchesRole;
     }), [users, searchTerm, selectedRole]);
   
-  const resetForm = () => setFormData({ email: '', password: '', fullName: '', role: 'customer' });
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      fullName: '',
+      password: '',
+      role: 'customer',
+      phone: '',
+      address: '',
+      gender: '',
+      nationality: ''
+    });
+    setSelectedUser(null);
+  };
 
   // === SỬA LẠI HÀM HANDLECREATE ĐỂ THÊM `createdAt` ===
   const handleCreate = async () => {
@@ -94,9 +116,11 @@ export default function UserManagement() {
     try {
       const body: Partial<User> = { 
         ...formData,
-        createdAt: new Date().toISOString() // Tự động thêm ngày tạo
+        fullName: formData.fullName,
+        name: formData.fullName, // Keep both for backward compatibility
+        createdAt: new Date().toISOString()
       };
-      await createUser(body, token);
+      await createUser(body);
       toast.success("Đã tạo người dùng mới!");
       setIsCreateDialogOpen(false);
       resetForm();
@@ -110,9 +134,13 @@ export default function UserManagement() {
     setSelectedUser(user);
     setFormData({
       email: user.email,
-      fullName: user.fullName || '',
+      fullName: user.fullName || user.fullname || user.name || '',
       password: '',
-      role: user.role === 'admin' ? 'admin' : 'customer'
+      role: user.role || 'customer',
+      phone: user.phone || '',
+      address: user.address || '',
+      gender: user.gender || '',
+      nationality: user.nationality || ''
     });
     setIsEditDialogOpen(true);
   };
@@ -121,16 +149,20 @@ export default function UserManagement() {
     if (!selectedUser || !token) return;
     try {
       const body: Partial<User> = {
+        name: formData.fullName,
         fullName: formData.fullName,
         email: formData.email,
         role: formData.role,
-        // (Không cần cập nhật createdAt, có thể thêm updatedAt nếu interface có)
+        phone: formData.phone,
+        address: formData.address,
+        gender: formData.gender,
+        nationality: formData.nationality
       };
       if (formData.password) {
         body.password = formData.password;
       }
       
-      await updateUser(selectedUser.id, body, token);
+      await updateUser(selectedUser.id, body);
       toast.success("Đã cập nhật thông tin người dùng.");
       setIsEditDialogOpen(false);
       resetForm();
@@ -145,7 +177,7 @@ export default function UserManagement() {
     if (currentUser?.id === userToDelete.id) return toast.error("Bạn không thể tự xóa tài khoản của mình.");
     if (!window.confirm(`Bạn có chắc muốn xóa người dùng "${userToDelete.email}"?`)) return;
     try {
-      await deleteUser(userToDelete.id, token);
+      await deleteUser(userToDelete.id);
       toast.success("Đã xóa người dùng.");
       await loadUsers();
     } catch(e: any) {

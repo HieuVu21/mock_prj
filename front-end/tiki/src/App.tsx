@@ -46,7 +46,7 @@ const App = () => (
                 <Route path="/confirm" element={<ConfirmPage />} />
                 <Route path="/orders" element={<OrderHistory />} />
                 <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                <Route path="/order-confirmation" element={<ConfirmPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />

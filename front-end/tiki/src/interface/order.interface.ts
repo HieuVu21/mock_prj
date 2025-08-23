@@ -6,11 +6,11 @@ export interface OrderItem {
   quantity: number;
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled' | 'shipped' | 'out_for_delivery' | 'returned' | 'failed';
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface Order {
-  id: number | string;
-  userId?: number | string;
+  id: string | number;
+  userId: string; // Added to track which user created the order
   user?: Partial<User>; // Thông tin người dùng có thể được đính kèm
   customerName?: string; // Hoặc chỉ có tên
   items: OrderItem[];

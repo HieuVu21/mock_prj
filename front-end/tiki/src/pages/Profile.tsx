@@ -21,10 +21,12 @@ interface DisplayOrder {
   items: DisplayOrderItem[];
   createdAt?: string;
   totalPrice?: number;
-  userId?: string | number;
+  userId: string;  // Changed from string | number to string
   user?: any;
   shippingAddress?: string;
   paymentMethod?: string;
+  customerName?: string;
+  phone?: string;
 }
 
 import {
@@ -51,7 +53,7 @@ import Footer from "../component/Footer";
 import { updateUser, getCurrentUser, getOrders } from "../services/api";
 import type { User } from "../interface/user.interface";
 import { OrderStatus } from "../interface/order.interface";
-import OrderDetails from "../components/OrderDetails";
+import OrderDetails from "../component/OrderDetails";
 
 // Helper function to get status text in Vietnamese
 const getStatusText = (status: string | null): string => {
@@ -61,7 +63,6 @@ const getStatusText = (status: string | null): string => {
     case 'confirmed':
       return 'Đã xác nhận';
     case 'shipping':
-    case 'out_for_delivery':
       return 'Đang giao hàng';
     case 'delivered':
       return 'Đã giao hàng';
@@ -141,20 +142,82 @@ const Profile = () => {
     const fetchOrders = async () => {
       try {
         setIsLoading(true);
-        const { data } = await getOrders();
+        
+        // Get user ID from auth data
+        const authData = JSON.parse(localStorage.getItem('auth') || '{}');
+        const userId = authData?.user?.id;
+        
+        if (!userId) {
+          console.error('❌ Không tìm thấy userId trong auth data');
+          toast.error('Vui lòng đăng nhập để xem đơn hàng');
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch orders for the current user
+        console.log('🔄 Bắt đầu lấy đơn hàng cho userId:', userId, '(type:', typeof userId, ')');
+        
+        // Get authentication token
+        const token = localStorage.getItem('token');
+        console.log('🔑 Token exists:', !!token);
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
+        // Ensure userId is a string for the API
+        const userIdStr = String(userId);
+        console.log('🔍 Gọi API getOrders với userId:', userIdStr, '(type:', typeof userIdStr, ')');
+        
+        // Fetch orders with the user's ID and token
+        const response = await getOrders({ 
+          userId: userIdStr,
+          isAdmin: false // Explicitly set isAdmin to false for regular users
+        });
+        console.log('🔑 Token được sử dụng:', token.substring(0, 10) + '...');
+        console.log('📡 Phản hồi từ API:', {
+          status: response.status,
+          ok: response.ok,
+          dataLength: response.data?.length || 0,
+          firstOrder: response.data?.[0] || 'No orders'
+        });
+        
+        if (!response || !response.ok || !response.data) {
+          throw new Error(`Lỗi từ API: ${response?.status} ${response?.statusText}`);
+        }
+        
+        const ordersData = response.data || [];
+        
+        console.log('✅ Dữ liệu đơn hàng nhận được từ API:', {
+          responseStatus: response?.status,
+          orderCount: ordersData.length,
+          firstOrder: ordersData[0] ? {
+            id: ordersData[0].id,
+            status: ordersData[0].status,
+            itemCount: ordersData[0].items?.length || 0
+          } : 'Không có đơn hàng nào'
+        });
+        
         // Transform the data to match our component's expectations
-        const formattedOrders: DisplayOrder[] = data.map((order: any) => ({
-          ...order,
-          date: order.createdAt,
-          total: order.totalPrice || 0,
-          items: (order.items || []).map((item: any) => ({
-            ...item,
-            name: item.book?.name || 'Sản phẩm không có tên',
-            price: item.book?.list_price || 0,
-            image: item.book?.images?.[0]?.thumbnail_url || 'https://via.placeholder.com/200',
-            quantity: item.quantity || 1
-          }))
-        }));
+        const formattedOrders: DisplayOrder[] = ordersData.map((order: any) => {
+          const formattedOrder = {
+            ...order,
+            userId: String(order.userId || ''), // Ensure userId is a string
+            date: order.createdAt,
+            total: order.totalPrice || 0,
+            items: (order.items || []).map((item: any) => ({
+              ...item,
+              name: item.book?.name || 'Sản phẩm không có tên',
+              price: item.book?.list_price || 0,
+              image: item.book?.images?.[0]?.thumbnail_url || 'https://via.placeholder.com/200',
+              quantity: item.quantity || 1
+            }))
+          };
+          
+          console.log(`📦 Đơn hàng #${formattedOrder.id} - ${formattedOrder.status} - ${formattedOrder.items.length} sản phẩm`);
+          return formattedOrder;
+        });
+        
+        console.log(`✅ Đã tải thành công ${formattedOrders.length} đơn hàng`);
         setOrders(formattedOrders);
       } catch (error) {
         console.error('Lỗi khi tải đơn hàng:', error);
@@ -216,7 +279,7 @@ const Profile = () => {
 
         // Initialize form data with user information
         setFormData({
-          fullName: userProfile.fullName || userProfile.name || "",
+          fullName: userProfile.fullName || "",
           nickName: userProfile.nickName || "",
           birthDate: birthDateParts,
           gender: userProfile.gender || "",
@@ -427,7 +490,7 @@ const Profile = () => {
               />
               <div>
                 <div className="font-semibold text-lg">
-                  {user?.fullName || user?.name || "Tài khoản"}
+                  {user?.fullName || "Tài khoản"}
                 </div>
               </div>
             </div>

@@ -196,50 +196,88 @@ const HomeComponent = () => {
           <div style={productGridContainerStyles}>
             <Banner />
 
+            <div className="bg-white p-4 mb-6 rounded-lg shadow-sm border border-gray-100">
+              <h2 className="text-lg font-semibold mb-4 text-gray-800">Khám phá theo danh mục</h2>
+              <div className="flex flex-wrap items-center justify-start gap-6">
+                {[
+                  { src: '/quanque.png', alt: 'English Books' },
+                  { src: '/tangluong.png', alt: 'Sách tiếng Việt' },
+                  { src: '/casio.png', alt: 'Văn phòng phẩm' },
+                  { src: '/meomeo.png', alt: 'Quà lưu niệm' }
+                ].map((item, index) => (
+                  <div key={index} className="flex flex-col items-center w-24">
+                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 p-1 bg-white cursor-pointer">
+                      <img 
+                        src={item.src} 
+                        alt={item.alt} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="mt-2 text-xs text-center text-gray-700 line-clamp-2 h-8 flex items-center">
+                      {item.alt}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Filter options */}
             <div className="mb-4 bg-white p-4 rounded-lg shadow-sm">
               <h2 className="text-lg font-medium mb-3">Tất cả sản phẩm</h2>
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
-                  <img src="/iconnow.png" alt="Now" className="h-4" />
-                  <span className="text-xs">Giao siêu tốc 2H</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
-                  <span className="text-[10px] text-red-500 font-medium">TOP DEAL</span>
-                  <span className="text-xs">Siêu rẻ</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200">
-                  <span className="text-[10px] text-blue-600 font-medium">FREESHIP</span>
-                  <span className="text-xs">XTRA</span>
-                </div>
-                <div className="flex items-center gap-1 bg-white px-3 py-2 rounded border border-gray-200">
-                  <span className="text-xs text-yellow-400">★★★★★</span>
-                  <span className="text-xs">từ 4 sao</span>
-                </div>
+              <div className="flex items-center flex-wrap  divide-x divide-gray-200 overflow-hidden">
+                <label className="flex items-center gap-2 bg-white px-3 py-2 hover:bg-gray-50">
+                  <input type="checkbox" className="rounded text-blue-500 border-gray-300 focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                  <div className="flex items-center gap-2">
+                    <img src="/iconnow.png" alt="Now" className="h-4" />
+                    <span className="text-xs whitespace-nowrap">Giao siêu tốc 2H</span>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-2 bg-white px-3 py-2 hover:bg-gray-50">
+                  <input type="checkbox" className="rounded text-blue-500 border-gray-300 focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-red-500 font-medium">TOP DEAL</span>
+                    <span className="text-xs whitespace-nowrap">Siêu rẻ</span>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-2 bg-white px-3 py-2 hover:bg-gray-50">
+                  <input type="checkbox" className="rounded text-blue-500 border-gray-300 focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-blue-600 font-medium">FREESHIP</span>
+                    <span className="text-xs whitespace-nowrap">XTRA</span>
+                  </div>
+                </label>
+                
+                <label className="flex items-center gap-2 bg-white px-3 py-2 hover:bg-gray-50">
+                  <input type="checkbox" className="rounded text-blue-500 border-gray-300 focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-yellow-400">★★★★★</span>
+                    <span className="text-xs whitespace-nowrap">từ 4 sao</span>
+                  </div>
+                </label>
               </div>
               {/* Sort options */}
             <div className="flex items-center justify-between my-4">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">Sắp xếp theo</span>
+                <span className="text-sm font-medium">Sắp xếp</span>
                 <div className="relative">
                   <select
                     value={`${sortBy}-${sortOrder}`}
                     onChange={(e) => {
                       const [selectedSortBy, selectedSortOrder] = e.target.value.split('-') as [
-                        'name' | 'rating' | 'sold' | 'price',
+                        'rating' | 'sold' | 'price',
                         'asc' | 'desc'
                       ];
                       setSortBy(selectedSortBy);
                       setSortOrder(selectedSortOrder);
                     }}
-                    className="appearance-none bg-white border border-gray-300 rounded-full pl-3 pr-8 py-2 text-xs font-medium text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors duration-200"
+                    className="appearance-none bg-white border border-gray-300 rounded-full pl-3 pr-8 py-2 text-xs font-medium text-gray-700 focus:outline-none  cursor-pointer transition-colors duration-200"
                   >
                     <option value="sold-desc">Bán chạy nhất</option>
                     <option value="rating-desc">Đánh giá cao nhất</option>
-                    <option value="price-asc">Giá: Thấp đến cao</option>
-                    <option value="price-desc">Giá: Cao đến thấp</option>
-                    <option value="name-asc">Tên: A đến Z</option>
-                    <option value="name-desc">Tên: Z đến A</option>
+                    <option value="price-asc">Thấp đến cao</option>
+                    <option value="price-desc">Cao đến thấp</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500">
                     <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">

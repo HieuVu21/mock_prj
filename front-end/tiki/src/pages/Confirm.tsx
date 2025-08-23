@@ -3,12 +3,22 @@ import Header from "../component/Header";
 import Footer from "../component/Footer";
 import OrderStatusBadge from "../component/OrderStatusBadge";
 
-type OrderItem = {
+type Book = {
   id: string | number;
   name: string;
-  price: number;
+  current_seller?: {
+    price: number;
+  };
+  list_price?: number;
+  images?: Array<{
+    small_url: string;
+  }>;
+};
+
+type OrderItem = {
+  id?: string | number;
+  book: Book;
   quantity: number;
-  image: string;
 };
 
 type LocationState = {
@@ -81,13 +91,7 @@ const ConfirmPage = () => {
                     <div className="flex justify-between py-3 text-lg">
                       <span className="text-gray-500">Tổng cộng</span>
                       <span className="font-medium">
-                        {orderItems
-                          .reduce(
-                            (sum, item) => sum + item.price * item.quantity,
-                            0
-                          )
-                          .toLocaleString("vi-VN")}{" "}
-                        đ
+                        {state.total.toLocaleString("vi-VN")} đ
                       </span>
                     </div>
                   </div>
@@ -118,17 +122,22 @@ const ConfirmPage = () => {
                   Xem đơn hàng
                 </div>
               </div>
-              <div className="text-sm mt-1 pt-1 text-black divide-y border-t !w-full">Giao thứ 6, trước 13h, 28/03</div>
+              <div className="text-sm mt-1 pt-1 text-black divide-y border-t !w-full">
+                Giao thứ 6, trước 13h, 28/03
+              </div>
               <div className="space-y-4">
-                {orderItems.map((item) => (
+                {orderItems.map((item, index) => (
                   <div
-                    key={item.id}
+                    key={`${item.id}-${index}`}
                     className="flex items-center gap-4 p-3"
                   >
-                    <div className="w-20 h-24 flex-shrink-0 rounded overflow-hidden flex items-center justify-center">
+                    <div className="w-20 h-24 flex-shrink-0 rounded overflow-hidden flex items-center justify-center bg-white">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={
+                          item.book.images?.[0]?.small_url ||
+                          "https://via.placeholder.com/80x96"
+                        }
+                        alt={item.book.name}
                         className="w-full h-full object-contain p-1"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -136,13 +145,14 @@ const ConfirmPage = () => {
                         }}
                       />
                     </div>
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1">
-                      {item.name}
-                    </h4>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {item.book.name}
+                      </h4>
+                    </div>
                   </div>
                 ))}
               </div>
-            
             </div>
           </div>
         </div>

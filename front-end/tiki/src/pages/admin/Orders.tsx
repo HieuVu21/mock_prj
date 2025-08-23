@@ -19,7 +19,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // Import API, Auth và Interfaces
 import { getOrders, updateOrderStatus } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Order } from "@/interface/order.interface";
+import type { Order, OrderStatus } from "@/interface/order.interface";
+
+const isOrderStatus = (status: string): status is OrderStatus => {
+  return ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'].includes(status);
+};
 
 const statusConfig = {
   pending: { label: 'Chờ xác nhận', icon: Clock },
@@ -33,26 +37,40 @@ export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   useEffect(() => {
     document.title = "Quản lý Đơn hàng | Admin Panel";
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    
+    const fetchOrders = async () => {
+      if (!token || !user) {
+        toast.error('Vui lòng đăng nhập để xem đơn hàng');
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    getOrders({ _sort: 'id', _order: 'desc' }) // Sắp xếp đơn hàng mới nhất lên đầu
-      .then(({ data }) => setOrders(data || []))
-      .catch(() => toast.error("Tải danh sách đơn hàng thất bại."))
-      .finally(() => setLoading(false));
+      try {
+        setLoading(true);
+        // For admin, we want to get all orders without user filter
+        const response = await getOrders({ isAdmin: true });
+        const ordersData = response?.data || [];
+        console.log('Fetched orders:', ordersData);
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast.error(`Tải danh sách đơn hàng thất bại: ${error.message || 'Lỗi không xác định'}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
   }, [token]);
 
-  const getStatusBadge = (status: Order['status']) => {
+  const getStatusBadge = (status: OrderStatus) => {
     const config = statusConfig[status];
     if (!config) return <Badge variant="secondary">{status}</Badge>;
     const Icon = config.icon;
@@ -64,13 +82,18 @@ export default function OrderManagement() {
       (String(order.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
        (order.customerName || order.user?.email || '').toLowerCase().includes(searchTerm.toLowerCase())) &&
       (selectedStatus === 'all' || order.status === selectedStatus)
-    ), [orders, searchTerm, selectedStatus]);
+    ) as Order[], [orders, searchTerm, selectedStatus]);
   
-  const handleStatusChange = async (orderId: string | number, newStatus: Order['status']) => {
-    if (!token) return toast.error("Thiếu quyền xác thực");
+  const handleStatusChange = async (orderId: string | number, newStatus: string) => {
+    if (!isOrderStatus(newStatus)) return;
+    if (!token) return;
     try {
-      const { data: updatedOrder } = await updateOrderStatus(orderId, newStatus, token);
-      setOrders(orders.map(o => o.id === orderId ? updatedOrder : o));
+      await updateOrderStatus(orderId, newStatus);
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
       toast.success(`Đã cập nhật trạng thái đơn hàng thành "${statusConfig[newStatus].label}"`);
     } catch (e: any) {
       toast.error(e.message || "Cập nhật thất bại");
@@ -98,11 +121,21 @@ export default function OrderManagement() {
           <div className="flex-1">
             <div className="relative"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Tìm kiếm theo mã đơn, tên khách hàng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
           </div>
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-[180px]"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
+          <Select 
+            value={selectedStatus} 
+            onValueChange={(value: string) => setSelectedStatus(value as OrderStatus | 'all')}
+          >
+            <SelectTrigger className="w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              {Object.entries(statusConfig).map(([status, config]) => (<SelectItem key={status} value={status}>{config.label}</SelectItem>))}
+              {(Object.keys(statusConfig) as OrderStatus[]).map((status) => (
+                <SelectItem key={status} value={status}>
+                  {statusConfig[status].label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -117,7 +150,16 @@ export default function OrderManagement() {
               {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell><div><p className="font-medium text-foreground">#{order.id}</p><p className="text-xs text-muted-foreground">{order.paymentMethod}</p></div></TableCell>
-                  <TableCell><div><p className="font-medium text-foreground">{order.customerName || order.user?.email}</p><p className="text-sm text-muted-foreground">{order.user?.phone}</p></div></TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {order.shippingAddress?.split(',')?.[0]?.trim() || order.user?.phone}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {order.shippingAddress?.split(',').slice(2).join(',').trim()}
+                      </p>
+                    </div>
+                  </TableCell>
                   <TableCell><div><p className="font-medium text-foreground">{order.items.length} sản phẩm</p><p className="text-sm text-muted-foreground line-clamp-1">{order.items[0]?.book.name}{order.items.length > 1 && ` +${order.items.length - 1}`}</p></div></TableCell>
                   <TableCell><p className="font-semibold text-foreground">{formatCurrency(order.totalPrice)}</p></TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
@@ -127,10 +169,29 @@ export default function OrderManagement() {
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleViewDetail(order)}><Eye className="h-4 w-4 mr-2" />Xem chi tiết</DropdownMenuItem>
-                        {order.status === 'pending' && (<DropdownMenuItem onClick={() => handleStatusChange(order.id, 'confirmed')}><CheckCircle className="h-4 w-4 mr-2" />Xác nhận đơn</DropdownMenuItem>)}
-                        {order.status === 'confirmed' && (<DropdownMenuItem onClick={() => handleStatusChange(order.id, 'shipping')}><Truck className="h-4 w-4 mr-2" />Bắt đầu giao</DropdownMenuItem>)}
-                        {order.status === 'shipping' && (<DropdownMenuItem onClick={() => handleStatusChange(order.id, 'delivered')}><Package className="h-4 w-4 mr-2" />Đã giao</DropdownMenuItem>)}
-                        {['pending', 'confirmed'].includes(order.status) && (<DropdownMenuItem onClick={() => handleStatusChange(order.id, 'cancelled')} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="h-4 w-4 mr-2" />Hủy đơn</DropdownMenuItem>)}
+                        {order.status === 'pending' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'processing')}>
+                            <CheckCircle className="h-4 w-4 mr-2" />Xử lý đơn
+                          </DropdownMenuItem>
+                        )}
+                        {order.status === 'processing' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'shipped')}>
+                            <Truck className="h-4 w-4 mr-2" />Đã gửi hàng
+                          </DropdownMenuItem>
+                        )}
+                        {order.status === 'shipped' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'delivered')}>
+                            <Package className="h-4 w-4 mr-2" />Xác nhận đã giao
+                          </DropdownMenuItem>
+                        )}
+                        {['pending', 'processing'].includes(order.status) && (
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(order.id, 'cancelled')} 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />Hủy đơn
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -154,15 +215,19 @@ export default function OrderManagement() {
                 <div className="border-t pt-4">
                   <h3 className="font-semibold text-foreground mb-3 flex items-center"><User className="h-4 w-4 mr-2" />Thông tin khách hàng</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><p className="text-muted-foreground">Họ tên:</p><p className="font-medium">{selectedOrder.customerName || selectedOrder.user?.fullName}</p></div>
-                    <div><p className="text-muted-foreground">Email:</p><p className="font-medium">{selectedOrder.user?.email}</p></div>
-                    <div><p className="text-muted-foreground">Số điện thoại:</p><p className="font-medium">{selectedOrder.user?.phone}</p></div>
+                    <div><p className="text-muted-foreground">Họ tên:</p><p className="font-medium">
+                      {selectedOrder.shippingAddress?.split(',')[0]?.trim()}
+                    </p></div>
+                    <div><p className="text-muted-foreground">Email:</p><p className="font-medium">{selectedOrder.shippingAddress?.split(',')[3]?.trim()}</p></div>
+                    <div><p className="text-muted-foreground">Số điện thoại:</p><p className="font-medium">
+                      {selectedOrder.shippingAddress?.split(',')?.[1]?.trim() || selectedOrder.user?.phone}
+                    </p></div>
                     <div><p className="text-muted-foreground">Phương thức thanh toán:</p><p className="font-medium">{selectedOrder.paymentMethod}</p></div>
                   </div>
                 </div>
                 <div className="border-t pt-4">
                   <h3 className="font-semibold text-foreground mb-3 flex items-center"><MapPin className="h-4 w-4 mr-2" />Thông tin giao hàng</h3>
-                  <div className="text-sm space-y-2"><div><p className="text-muted-foreground">Địa chỉ:</p><p className="font-medium">{selectedOrder.shippingAddress}</p></div></div>
+                  <div className="text-sm space-y-2"><div><p className="text-muted-foreground">Địa chỉ:</p><p className="font-medium">{selectedOrder.shippingAddress?.split(',')[2]?.trim()}</p></div></div>
                 </div>
                 <div className="border-t pt-4">
                   <h3 className="font-semibold text-foreground mb-3 flex items-center"><Package className="h-4 w-4 mr-2" />Sản phẩm đặt mua</h3>

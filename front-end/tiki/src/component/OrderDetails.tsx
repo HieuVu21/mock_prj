@@ -18,6 +18,7 @@ interface OrderItem {
 interface OrderDetailsProps {
   order: {
     id: string;
+    userId: string; // Added userId to track which user created the order
     status: string;
     date: string;
     total: number;
@@ -70,7 +71,7 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
     <div className=" shadow-sm p-6">
       <div className="mb-6">
         <div className="flex items-center mb-4">
-          <h2 className="text-xl font-semibold">Chi tiết đơn hàng </h2>
+          <h2 className="text-xl font-semibold">Chi tiết đơn hàng #</h2>
           <h2 className="text-xl font-semibold ml-1">{order.id} -</h2>
           <div className="flex items-center ml-1">
             <span className="text-xl font-semibold">
@@ -95,25 +96,38 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
               ĐỊA CHỈ NGƯỜI NHẬN
             </h2>
             <div className="space-y-3 bg-white p-4 rounded-sm flex-1">
-              <div className="flex flex-col">
-                <p className="text-sm">
-                  {order.customerName || "Chưa cập nhật"}
-                </p>
-              </div>
-              <div className="flex flex-col">
-                <h4 className="text-sm font-medium text-gray-600">
-                  Địa chỉ nhận hàng
-                </h4>
-                <p className="text-sm">
-                  {order.shippingAddress || "Chưa cập nhật"}
-                </p>
-              </div>
-              <div className="flex flex-col">
-                <h4 className="text-sm font-medium text-gray-600">
-                  Số điện thoại
-                </h4>
-                <p className="text-sm">{order.phone || "Chưa cập nhật"}</p>
-              </div>
+              {(() => {
+                // Try to parse shippingAddress in format "address, phone, name"
+                const parts = order.shippingAddress?.split(',').map(part => part.trim()) || [];
+                const [name, phone, address] = parts;
+                
+                return (
+                  <>
+                    {name && (
+                      <div className="flex flex-col">
+                        <h4 className="text-sm font-medium text-gray-600">
+                          Tên người nhận
+                        </h4>
+                        <p className="text-sm">{name}</p>
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <h4 className="text-sm font-medium text-gray-600">
+                        Địa chỉ
+                      </h4>
+                      <p className="text-sm">
+                        {address || "Chưa cập nhật"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col">
+                      <h4 className="text-sm font-medium text-gray-600">
+                        Điện thoại
+                      </h4>
+                      <p className="text-sm">{phone || order.phone || "Chưa cập nhật"}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
           <div className="flex flex-col">
@@ -136,7 +150,7 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
             </h2>
             <div className="space-y-3 bg-white p-4 rounded-sm flex-1">
               <p className="text-sm">
-                {order.paymentMethod || "Thanh toán khi nhận hàng"}
+                {order.paymentMethod === 'cod' ? 'Thanh toán tiền mặt khi nhận hàng' : 'Thanh toán qua Viettel Money'}
               </p>
             </div>
           </div>

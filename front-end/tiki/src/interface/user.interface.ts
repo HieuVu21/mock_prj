@@ -5,6 +5,7 @@ export interface User {
   password?: string; // Mật khẩu là optional
   name?: string; // Tên gốc từ register
   fullName?: string; // Tên đầy đủ có thể cập nhật
+  fullname?: string; // Alias cho fullName để tương thích với API
   nickName?: string; // Nickname
   role?: 'admin' | 'customer' | 'user'; // Thêm 'user' và cho phép optional
   status?: 'active' | 'inactive' | 'banned';
