@@ -1,19 +1,22 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Header from "../component/Header";
 import Footer from "../component/Footer";
 import OrderStatusBadge from "../component/OrderStatusBadge";
 
-type Book = {
+interface BookImage {
+  small_url: string;
+}
+
+interface Book {
   id: string | number;
   name: string;
   current_seller?: {
     price: number;
   };
   list_price?: number;
-  images?: Array<{
-    small_url: string;
-  }>;
-};
+  images?: BookImage[];
+}
 
 type OrderItem = {
   id?: string | number;
@@ -31,8 +34,19 @@ type LocationState = {
 
 const ConfirmPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const state = (location.state || {}) as LocationState;
+  
+  // Redirect to home if no order data is present
+  useEffect(() => {
+    if (!state.orderId) {
+      navigate('/');
+    }
+  }, [state.orderId, navigate]);
+
   const orderItems = state.items || [];
+  const total = state.total || 0;
+  const paymentMethod = state.paymentMethod || 'Thanh toán tiền mặt';
 
   return (
     <>
@@ -51,7 +65,7 @@ const ConfirmPage = () => {
                       <p className="mt-1 text-xl opacity-90">
                         Chuẩn bị tiền mặt{" "}
                         <span className="font-medium">
-                          {state.total.toLocaleString("vi-VN")} đ
+                          {total.toLocaleString("vi-VN")} đ
                         </span>
                       </p>
                     )}
@@ -85,13 +99,13 @@ const ConfirmPage = () => {
                         Phương thức thanh toán
                       </span>
                       <span className="font-medium">
-                        {state.paymentMethod || "Thanh toán tiền mặt"}
+                        {paymentMethod}
                       </span>
                     </div>
                     <div className="flex justify-between py-3 text-lg">
                       <span className="text-gray-500">Tổng cộng</span>
                       <span className="font-medium">
-                        {state.total.toLocaleString("vi-VN")} đ
+                        {total.toLocaleString("vi-VN")} đ
                       </span>
                     </div>
                   </div>
@@ -126,32 +140,45 @@ const ConfirmPage = () => {
                 Giao thứ 6, trước 13h, 28/03
               </div>
               <div className="space-y-4">
-                {orderItems.map((item, index) => (
-                  <div
-                    key={`${item.id}-${index}`}
-                    className="flex items-center gap-4 p-3"
-                  >
-                    <div className="w-20 h-24 flex-shrink-0 rounded overflow-hidden flex items-center justify-center bg-white">
-                      <img
-                        src={
-                          item.book.images?.[0]?.small_url ||
-                          "https://via.placeholder.com/80x96"
-                        }
-                        alt={item.book.name}
-                        className="w-full h-full object-contain p-1"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "https://via.placeholder.com/80x96";
-                        }}
-                      />
+                {orderItems.map((item, index) => {
+                  const defaultBook: Book = {
+                    id: 'unknown',
+                    name: 'Sản phẩm không có tên',
+                    images: []
+                  };
+                  const book: Book = item?.book || defaultBook;
+                  const imageUrl = book.images?.[0]?.small_url || "https://via.placeholder.com/80x96";
+                  const bookName = book.name;
+                  
+                  return (
+                    <div key={`${item?.id || 'item'}-${index}`} className="flex items-center gap-4 p-3">
+                      <div className="w-20 h-24 flex-shrink-0 rounded overflow-hidden flex items-center justify-center bg-white">
+                        <img
+                          src={imageUrl}
+                          alt={bookName}
+                          className="w-full h-full object-contain p-1"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "https://via.placeholder.com/80x96";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {bookName}
+                        </h4>
+                        {book.current_seller?.price && (
+                          <div className="text-sm text-gray-600 mt-1">
+                            {book.current_seller.price.toLocaleString('vi-VN')} đ
+                          </div>
+                        )}
+                        <div className="text-sm text-gray-500 mt-1">
+                          Số lượng: {item.quantity || 1}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
-                        {item.book.name}
-                      </h4>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

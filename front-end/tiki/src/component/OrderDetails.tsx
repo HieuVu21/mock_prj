@@ -56,12 +56,12 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
       case "shipping":
       case "out_for_delivery":
         return "Đang giao hàng";
-      case "delivered":
-        return "Đã giao hàng";
       case "cancelled":
         return "Đã hủy";
       case "failed":
         return "Giao hàng thất bại";
+      case "shipped":
+        return "Đã giao";
       default:
         return status;
     }

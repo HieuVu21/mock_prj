@@ -64,12 +64,12 @@ const getStatusText = (status: string | null): string => {
       return 'Đã xác nhận';
     case 'shipping':
       return 'Đang giao hàng';
-    case 'delivered':
-      return 'Đã giao hàng';
     case 'cancelled':
       return 'Đã hủy';
     case 'failed':
       return 'Giao hàng thất bại';
+    case 'shipped':
+      return 'Đã giao'
     default:
       return status || '';
   }
@@ -857,9 +857,9 @@ const Profile = () => {
                         Đang giao hàng
                       </button>
                       <button
-                        onClick={() => setOrderStatusFilter("delivered")}
+                        onClick={() => setOrderStatusFilter("shipped")}
                         className={`py-3 text-sm font-medium whitespace-nowrap text-center ${
-                          orderStatusFilter === "delivered"
+                          orderStatusFilter === "shipped"
                             ? "text-blue-600 border-b-2 border-blue-600 font-semibold"
                             : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                         }`}
@@ -952,14 +952,14 @@ const Profile = () => {
                             </div>
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                order.status === "delivered"
+                                order.status === "delivered" || order.status === "shipped"
                                   ? "bg-green-100 text-green-800"
                                   : order.status === "shipping" ||
                                     order.status === "out_for_delivery"
                                   ? "bg-blue-100 text-blue-800"
                                   : order.status === "cancelled" ||
                                     order.status === "failed"
-                                  ? "bg-red-100 text-red-800"
+                                  ? "bg-red-100 text-red-800" 
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
