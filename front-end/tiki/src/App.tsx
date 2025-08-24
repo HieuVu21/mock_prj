@@ -24,7 +24,7 @@ const Orders = lazy(() => import("./pages/admin/Orders"));
 import Profile from "./pages/Profile";
 import OrderHistory from "./pages/OrderHistory";
 import Checkout from "./pages/Checkout";
-import OrderConfirmation from "./pages/OrderConfirmation";
+import SearchResults from "./component/SearchResults";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -44,7 +44,7 @@ const App = () => (
                 <Route path="/profile" element={<Profile  />} />
                 <Route path="/cart" element={<CartPage  />} />
                 <Route path="/confirm" element={<ConfirmPage />} />
-                <Route path="/orders" element={<OrderHistory />} />
+                <Route path="/search" element={<SearchResults />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order-confirmation" element={<ConfirmPage />} />
                 <Route element={<ProtectedRoute />}>

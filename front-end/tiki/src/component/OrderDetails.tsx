@@ -5,33 +5,63 @@ import {
   FiCheckCircle,
   FiXCircle,
 } from "react-icons/fi";
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { updateOrderStatus } from '../services/api';
+import { toast } from 'react-hot-toast';
 
-interface OrderItem {
-  id?: string;
+interface CurrentSeller {
+  id: number;
+  sku: string;
   name: string;
+  link: string;
+  logo: string;
   price: number;
-  quantity: number;
-  image?: string;
-  discount?: number;
+  product_id: string;
 }
 
 interface OrderDetailsProps {
   order: {
-    id: string;
-    userId: string; // Added userId to track which user created the order
+    id: string | number;
+    userId: string;
     status: string;
     date: string;
     total: number;
-    items: OrderItem[];
+    items: Array<{
+      id?: string;
+      name?: string;
+      price?: number;
+      quantity: number;
+      image?: string;
+      book?: {
+        name?: string;
+        list_price?: number;
+        images?: Array<{ thumbnail_url?: string }>;
+        current_seller?: {
+          name?: string;
+          price?: number;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+      current_seller?: {
+        name?: string;
+        price?: number;
+        [key: string]: any;
+      };
+      [key: string]: any;
+    }>;
     shippingAddress?: string;
     paymentMethod?: string;
     customerName?: string;
     phone?: string;
+    [key: string]: any;
   };
   onBack: () => void;
+  onOrderUpdate?: (updatedOrder: any) => void;
 }
 
-const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
+const OrderDetails = ({ order, onBack, onOrderUpdate }: OrderDetailsProps & { onOrderUpdate?: (updatedOrder: any) => void }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "delivered":
@@ -174,21 +204,38 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
               {/* Product Info - col-span-5 */}
               <div className="col-span-5 flex items-center">
                 <div className="w-16 h-16 overflow-hidden mr-3 flex-shrink-0">
-                  {item.image ? (
+                  {item.book?.images?.[0]?.thumbnail_url || item.image ? (
                     <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
+                      src={item.book?.images?.[0]?.thumbnail_url || item.image}
+                      alt={item.book?.name || item.name || 'Sản phẩm không có tên'}
+                      className="w-20 h-24 object-cover rounded"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <div className="w-20 h-24 flex items-center justify-center bg-gray-200">
                       <FiPackage className="text-gray-400 text-xl" />
                     </div>
                   )}
                 </div>
-                <h3 className="font-medium text-sm line-clamp-2">
-                  {item.name}
-                </h3>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">{item.book?.name || item.name || 'Sản phẩm không có tên'}</h3>
+                  <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(item.book?.list_price || item.price || 0)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Tổng:{" "}
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format((item.book?.list_price || item.price || 0) * item.quantity)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Người bán: {item.book?.current_seller?.name || item.current_seller?.name || 'Không rõ'}
+                  </p>
+                </div>
               </div>
 
               {/* Price - col-span-2 */}
@@ -197,7 +244,7 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
-                  }).format(item.price)}
+                  }).format(item.book?.list_price || item.price || 0)}
                 </p>
               </div>
 
@@ -209,11 +256,17 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
               {/* Discount - col-span-2 */}
               <div className="col-span-2 text-right">
                 <p className="text-sm text-black">
-                  -
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(item.discount || 0)}
+                  {(item.book?.current_seller?.price || item.current_seller?.price) ? (
+                    <>
+                      -
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(item.book?.current_seller?.price || item.current_seller?.price || 0)}
+                    </>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
                 </p>
               </div>
 
@@ -223,7 +276,10 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
-                  }).format(item.price * item.quantity - (item.discount || 0))}
+                  }).format(
+                    ((item.book?.list_price || item.price || 0) * item.quantity) - 
+                    (item.book?.current_seller?.price || item.current_seller?.price || 0)
+                  )}
                 </p>
               </div>
             </div>
@@ -239,7 +295,7 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
-                  }).format(order.total * 0.9)}
+                  }).format(order.total)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -253,7 +309,7 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
-                  }).format(order.total * 0.1)}
+                  }).format(25000)}
                 </span>
               </div>
               <div className="pt-3 mt-3 ">
@@ -270,19 +326,31 @@ const OrderDetails = ({ order, onBack }: OrderDetailsProps) => {
               <div className="grid grid-cols-2">
                 <div className="col-span-1"></div>
 
-                <button
-                  className="col-span-1 mt-4 py-2 px-4 border bg-yellow-300 rounded-md hover:bg-yellow-400 transition-colors duration-200 flex items-center justify-center gap-2 text-sm font-medium"
-                  onClick={() => {
-                    // Add your cancel order logic here
-                    if (
-                      window.confirm("Bạn có chắc chắn muốn huỷ đơn hàng này?")
-                    ) {
-                      // Handle order cancellation
-                    }
-                  }}
-                >
-                  Huỷ đơn hàng
-                </button>
+                {order.status === 'cancelled' ? (
+                  <div className="col-span-1 mt-4 py-2 px-4 border border-gray-300 bg-gray-100 text-gray-500 rounded-md flex items-center justify-center gap-2 text-sm font-medium">
+                    Đã hủy
+                  </div>
+                ) : (order.status === 'pending' || order.status === 'confirmed') ? (
+                  <button
+                    className="col-span-1 mt-4 py-2 px-4 border bg-yellow-300 rounded-md hover:bg-yellow-400 transition-colors duration-200 flex items-center justify-center gap-2 text-sm font-medium"
+                    onClick={async () => {
+                      if (window.confirm("Bạn có chắc chắn muốn huỷ đơn hàng này?")) {
+                        try {
+                          const updatedOrder = await updateOrderStatus(order.id, 'cancelled');
+                          toast.success('Đã hủy đơn hàng thành công');
+                          if (onOrderUpdate) {
+                            onOrderUpdate({ ...order, status: 'cancelled' });
+                          }
+                        } catch (error) {
+                          console.error('Lỗi khi hủy đơn hàng:', error);
+                          toast.error('Không thể hủy đơn hàng. Vui lòng thử lại.');
+                        }
+                      }
+                    }}
+                  >
+                    Huỷ đơn hàng
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>

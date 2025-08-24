@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import { getNames } from "country-list";
 
 // Local interface for the order item display
+interface CurrentSeller {
+  id: number;
+  sku: string;
+  name: string;
+  link: string;
+  logo: string;
+  price: number;
+  product_id: string;
+}
+
 interface DisplayOrderItem {
   id?: string;
   name: string;
@@ -10,6 +20,7 @@ interface DisplayOrderItem {
   quantity: number;
   image?: string;
   book?: any;
+  current_seller: CurrentSeller;
 }
 
 // Local interface for the order display
@@ -209,7 +220,16 @@ const Profile = () => {
               name: item.book?.name || 'Sản phẩm không có tên',
               price: item.book?.list_price || 0,
               image: item.book?.images?.[0]?.thumbnail_url || 'https://via.placeholder.com/200',
-              quantity: item.quantity || 1
+              quantity: item.quantity || 1,
+              current_seller: item.book?.current_seller || {
+                id: 0,
+                sku: '',
+                name: 'Unknown Seller',
+                link: '',
+                logo: '',
+                price: item.book?.list_price || 0,
+                product_id: item.book?.id?.toString() || ''
+              }
             }))
           };
           

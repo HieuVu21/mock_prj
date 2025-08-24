@@ -45,7 +45,7 @@ const ConfirmPage = () => {
   }, [state.orderId, navigate]);
 
   const orderItems = state.items || [];
-  const total = state.total || 0;
+  const total = state.total - 25000 || 0;
   const paymentMethod = state.paymentMethod || 'Thanh toán tiền mặt';
 
   return (

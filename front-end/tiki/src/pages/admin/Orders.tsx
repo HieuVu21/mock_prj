@@ -27,9 +27,9 @@ const isOrderStatus = (status: string): status is OrderStatus => {
 
 const statusConfig = {
   pending: { label: 'Chờ xác nhận', icon: Clock },
-  confirmed: { label: 'Đã xác nhận', icon: CheckCircle },
-  shipping: { label: 'Đang giao hàng', icon: Truck },
-  delivered: { label: 'Đã giao hàng', icon: Package },
+  confirmed: { label: 'Đang xác nhận', icon: CheckCircle },
+  shipped: { label: 'Đã giao hàng', icon: Truck },
+  shipping: { label: 'Đang giao hàng', icon: Package },
   cancelled: { label: 'Đã hủy', icon: XCircle }
 };
 
@@ -170,28 +170,21 @@ export default function OrderManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleViewDetail(order)}><Eye className="h-4 w-4 mr-2" />Xem chi tiết</DropdownMenuItem>
                         {order.status === 'pending' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'processing')}>
-                            <CheckCircle className="h-4 w-4 mr-2" />Xử lý đơn
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'confirmed')}>
+                            <CheckCircle className="h-4 w-4 mr-2" />Xác nhận đơn hàng
                           </DropdownMenuItem>
                         )}
                         {order.status === 'processing' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'shipped')}>
-                            <Truck className="h-4 w-4 mr-2" />Đã gửi hàng
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'shipping')}>
+                            <Truck className="h-4 w-4 mr-2" />Đang giao hàng
                           </DropdownMenuItem>
                         )}
                         {order.status === 'shipped' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'delivered')}>
-                            <Package className="h-4 w-4 mr-2" />Xác nhận đã giao
+                          <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'shipped')}>
+                            <Package className="h-4 w-4 mr-2" />Đã giao hàng
                           </DropdownMenuItem>
                         )}
-                        {['pending', 'processing'].includes(order.status) && (
-                          <DropdownMenuItem 
-                            onClick={() => handleStatusChange(order.id, 'cancelled')} 
-                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />Hủy đơn
-                          </DropdownMenuItem>
-                        )}
+                        
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

@@ -27,12 +27,40 @@ const SearchResults = () => {
 
       setLoading(true);
       try {
-        const response = await fetch(
-          baseURL + `/books?q=${encodeURIComponent(query)}`
-        );
-        if (!response.ok) throw new Error('Failed to fetch results');
-        const data = await response.json();
-        setResults(data);
+        // First, fetch all books
+        const response = await fetch(baseURL + '/books');
+        if (!response.ok) throw new Error('Failed to fetch books');
+        const allBooks = await response.json();
+
+        // Split query into words and filter out empty strings
+        const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+        
+        // Score each book based on word matches
+        const scoredBooks = allBooks.map((book: Books) => {
+          const title = book.name.toLowerCase();
+          const description = (book.description || '').toLowerCase();
+          
+          // Calculate score based on word matches
+          let score = 0;
+          searchTerms.forEach(term => {
+            if (title.includes(term)) {
+              score += 3; // Higher weight for title matches
+            }
+            if (description.includes(term)) {
+              score += 1; // Lower weight for description matches
+            }
+          });
+          
+          return { ...book, _score: score };
+        });
+
+        // Filter out books with no matches and sort by score
+        const matchedBooks = scoredBooks
+          .filter((book: any) => book._score > 0)
+          .sort((a: any, b: any) => b._score - a._score)
+          .map(({ _score, ...book }: any) => book); // Remove the _score before setting state
+
+        setResults(matchedBooks);
         setError(null);
       } catch (err) {
         console.error('Search error:', err);

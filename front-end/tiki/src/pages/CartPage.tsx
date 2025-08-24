@@ -205,11 +205,7 @@ const CartPage = () => {
                         <div className="text-red-600 font-medium">
                           {(item.list_price * item.quantity).toLocaleString('vi-VN')}đ
                         </div>
-                        {item.original_price > item.list_price && (
-                          <div className="text-xs text-green-600 mt-1">
-                            Tiết kiệm {((item.original_price - item.list_price) * item.quantity).toLocaleString('vi-VN')}đ
-                          </div>
-                        )}
+                    
                       </div>
                       <div className="col-span-1 flex justify-end">
                         <button 
@@ -245,7 +241,7 @@ const CartPage = () => {
                     
                     <div className="flex justify-between ">
                       <span className='text-black'>Giảm giá trực tiếp</span>
-                      <span className='text-green-600'>-{discount.toLocaleString('vi-VN')}đ</span>
+                      <span className='text-green-600'>-{total.toLocaleString('vi-VN')}đ</span>
                     </div>
                     
                   </div>
@@ -253,8 +249,8 @@ const CartPage = () => {
                   <div className="flex justify-between mb-4">
                     <span className="font-medium">Tổng tiền thanh toán</span>
                     <div className="text-right">
-                      <div className="text-red-600 text-xl font-bold">{total.toLocaleString('vi-VN')}đ</div>
-                      <div className='text-sm text-green-500 mt-1'>Tiết kiệm {discount.toLocaleString('vi-VN')}đ</div>
+                      <div className="text-red-600 text-xl font-bold">{discount.toLocaleString('vi-VN')}đ</div>
+                      <div className='text-sm text-green-500 mt-1'>Tiết kiệm {total.toLocaleString('vi-VN')}đ</div>
                       <div className="text-sm text-gray-500 mt-1">(Đã bao gồm VAT nếu có)</div>
                     </div>
                   </div>

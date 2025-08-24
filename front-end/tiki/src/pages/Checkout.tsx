@@ -667,14 +667,14 @@ const Checkout = () => {
                         Tổng tiền thanh toán
                       </span>
                       <div className="text-base font-medium text-red-600">
-                        {formatPrice(orderSummary.total)}
+                        {formatPrice(orderSummary.total - 25000)}
                       </div>
                     </div>
                     <div className="flex justify-end items-center mb-2">
                       <span className="text-sm text-green-600 mr-2">
                         Tiết kiệm:{" "}
                       </span>
-                      <div className="text-sm text-green-600">25.000đ</div>
+                      <div className="text-sm text-green-600">35.000đ</div>
                     </div>
                     <div className="text-xs text-gray-500 text-center mt-2 px-4">
                       (Giá này đã bao gồm thuế GTGT, phí đóng gói, phí vận
